@@ -244,7 +244,7 @@
 
         peer.on('connection', (c) => {
             conn = c;
-            console.log("P2 Connected. Waiting for P2_READY...");
+            console.log("P2 Connected. Waiting for READY...");
             setupConnection();
         });
 
@@ -268,7 +268,6 @@
             
             conn.on('open', () => {
                 console.log("Connected to Host. Sending READY...");
-                // 接続が物理的に開いた直後に「準備完了」をホストへ送る
                 conn.send({ type: 'P2_READY' });
             });
         });
@@ -285,18 +284,18 @@
 
             // ホスト側：P2の準備完了を受けてゲームを開始し、デッキを同期する
             if (data.type === 'P2_READY' && myPlayerRole === 'p1') {
-                initApp(); // 自分の画面を遷移
-                // 生成したデッキをP2に送り、P2も開始させる
+                initApp(); // まずP1側を起動
+                // 生成されたランダムなデッキを、全く同じ内容でP2に送る
                 conn.send({ 
                     type: 'SYNC_START', 
-                    decks: window.gameInstance.deck 
+                    decks: JSON.parse(JSON.stringify(window.gameInstance.deck)) 
                 });
                 return;
             }
 
-            // ゲスト側：ホストからの開始信号でUIを遷移
+            // ゲスト側：ホストからの開始信号（デッキ入り）でUIを遷移
             if (data.type === 'SYNC_START') {
-                initApp(data.decks);
+                initApp(data.decks); // P2側はホストのデッキを使って起動
                 return;
             }
 
@@ -323,7 +322,7 @@
         overlay.style.display = 'block';
         game.style.visibility = 'visible';
         
-        // インスタンスがなければ作成
+        // インスタンスがなければ作成（デッキ情報を引き継ぐ）
         if(!window.gameInstance) {
             window.gameInstance = new StrategicGame(syncedDecks);
         }
@@ -392,7 +391,7 @@
             this.hp = { p1: 25, p2: 25 };
             this.hand = { p1: [], p2: [] };
             
-            // デッキの初期化 (同期対応)
+            // デッキの初期化。同期データがあればそれを使う、なければ自前でシャッフル（ホスト用）
             if (syncedDecks) {
                 this.deck = syncedDecks;
             } else {
@@ -427,7 +426,8 @@
         }
 
         createDeck() {
-            return FULL_CARD_POOL.map(c => ({ ...c })).sort(() => Math.random() - 0.5);
+            // 完全なコピーを作ってシャッフル
+            return JSON.parse(JSON.stringify(FULL_CARD_POOL)).sort(() => Math.random() - 0.5);
         }
 
         drawCard(player, count = 1) {
