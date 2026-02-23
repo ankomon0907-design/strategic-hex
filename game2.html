@@ -392,7 +392,7 @@
             this.hp = { p1: 25, p2: 25 };
             this.hand = { p1: [], p2: [] };
             
-            // デッキの初期化
+            // デッキの初期化 (同期対応)
             if (syncedDecks) {
                 this.deck = syncedDecks;
             } else {
