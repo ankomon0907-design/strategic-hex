@@ -92,6 +92,7 @@
             background: #222; border: 1px solid var(--accent);
             border-radius: 8px; padding: 10px; margin-bottom: 10px;
             font-size: 12px; display: none;
+            box-shadow: inset 0 0 10px rgba(0,255,204,0.1);
         }
 
         .hp-display { font-size: 24px; font-weight: bold; }
@@ -232,9 +233,12 @@
         peer.on('open', (id) => alert("部屋を作成しました。ID: " + id));
         peer.on('connection', (c) => {
             conn = c;
+            // 接続完了後に初期化
+            conn.on('open', () => {
+                alert("対戦相手が接続しました。");
+                initApp();
+            });
             setupConnection();
-            alert("対戦相手が接続しました");
-            initApp();
         });
         peer.on('error', (err) => alert("PeerJSエラー: " + err.type));
     }
@@ -249,7 +253,7 @@
             conn = peer.connect(roomId);
             setupConnection();
             conn.on('open', () => {
-                alert("部屋に接続しました。ホストからのデータ受信を待っています...");
+                alert("部屋に接続成功。ホストのデータ待ち...");
             });
         });
         peer.on('error', (err) => alert("接続エラー"));
@@ -257,11 +261,14 @@
 
     function setupConnection() {
         conn.on('data', (data) => {
-            if (!window.gameInstance && data.type === 'SYNC_START') {
+            // 受信側(P2)がゲームを開始するためのトリガー
+            if (data.type === 'SYNC_START') {
                 initApp(data.decks);
                 return;
             }
-            if(window.gameInstance) window.gameInstance.receiveRemoteAction(data);
+            if(window.gameInstance) {
+                window.gameInstance.receiveRemoteAction(data);
+            }
         });
     }
 
@@ -282,7 +289,7 @@
     */
     const ATTRS = ['FIRE', 'WIND', 'EARTH', 'THUNDER', 'WATER', 'ABYSS'];
     
-    // 全36種類のカードデータ
+    // 全36種類のカードデータ（完全に書き下ろし）
     const FULL_CARD_POOL = [
         { id: "f1", name: "焔の尖兵", attr: "FIRE", dur: 2, exp: 1, type: "PASSIVE", ability: "攻撃時、自身の攻撃+1", destruction: "敵ランダムに1ダメ" },
         { id: "f2", name: "火走りの策士", attr: "FIRE", dur: 3, exp: 1, type: "PASSIVE", ability: "囲み条件緩和(1方向)", destruction: "自分HP-1" },
@@ -410,7 +417,7 @@
             } else if (data.type === 'SKILL_ACTIVATE') {
                 this.executeSkillOnTarget(data.targetIdx, data.skillInfo);
             } else if (data.type === 'T4_CMD') {
-                this.board[data.idx].usedThunderCommand = true;
+                if(this.board[data.idx]) this.board[data.idx].usedThunderCommand = true;
                 this.log(`${this.board[data.idx].name}が轟雷の指令を受けました`);
                 this.updateUI();
             }
@@ -421,7 +428,7 @@
 
             const cardAtCell = this.board[idx];
 
-            // 能力表示（詳細パネル）の更新
+            // 盤面のカードをクリックしたら詳細パネルを表示
             if (cardAtCell) {
                 this.showDetail(cardAtCell);
             } else {
@@ -486,7 +493,7 @@
             this.updateUI();
         }
 
-        // 盤面カードの詳細を表示する新メソッド
+        // 詳細パネル表示用メソッド
         showDetail(card) {
             const panel = document.getElementById('detail-panel');
             panel.style.display = 'block';
@@ -640,8 +647,10 @@
                 this.log(`${target.name}に爆発の呪いをかけた`);
             }
 
-            owner.isFatigued = true;
-            owner.fatigueTimer = 1;
+            if(owner) {
+                owner.isFatigued = true;
+                owner.fatigueTimer = 1;
+            }
             this.updateUI();
         }
 
