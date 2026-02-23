@@ -282,10 +282,8 @@
         conn.on('data', (data) => {
             console.log("Received Data:", data.type);
 
-            // ホスト側：P2の準備完了を受けてゲームを開始し、デッキを同期する
             if (data.type === 'P2_READY' && myPlayerRole === 'p1') {
-                initApp(); // まずP1側を起動
-                // 生成されたランダムなデッキを、全く同じ内容でP2に送る
+                initApp(); 
                 conn.send({ 
                     type: 'SYNC_START', 
                     decks: JSON.parse(JSON.stringify(window.gameInstance.deck)) 
@@ -293,13 +291,11 @@
                 return;
             }
 
-            // ゲスト側：ホストからの開始信号（デッキ入り）でUIを遷移
             if (data.type === 'SYNC_START') {
-                initApp(data.decks); // P2側はホストのデッキを使って起動
+                initApp(data.decks); 
                 return;
             }
 
-            // ゲーム中のアクション同期
             if(window.gameInstance) {
                 window.gameInstance.receiveRemoteAction(data);
             }
@@ -317,12 +313,10 @@
         const game = document.getElementById('game-container');
         const overlay = document.getElementById('return-home-overlay');
 
-        // UIを強制的に切り替え
         home.classList.add('hidden');
         overlay.style.display = 'block';
         game.style.visibility = 'visible';
         
-        // インスタンスがなければ作成（デッキ情報を引き継ぐ）
         if(!window.gameInstance) {
             window.gameInstance = new StrategicGame(syncedDecks);
         }
@@ -374,7 +368,7 @@
         // ABYSS (特殊・呪い)
         { id: "a1", name: "闇縛りの影", attr: "ABYSS", dur: 2, exp: 1, type: "PASSIVE", ability: "攻撃対象の能力封印", destruction: "なし" },
         { id: "a2", name: "深淵の囁き", attr: "ABYSS", dur: 3, exp: 1, type: "ACTIVE", ability: "【発動】敵の爆ダメ+1", destruction: "自分HP-1" },
-        { id: "a3", name: "呪刻の司祭", attr: "ABYSS", dur: 4, exp: 2, type: "PASSIVE", ability: "敵爆発時に追加1ダメ", destruction: "相手HP+1" },
+        { id: "a3", name: "呪刻의 司祭", attr: "ABYSS", dur: 4, exp: 2, type: "PASSIVE", ability: "敵爆発時に追加1ダメ", destruction: "相手HP+1" },
         { id: "a4", name: "奈落の操者", attr: "ABYSS", dur: 5, exp: 2, type: "PASSIVE", ability: "敵の破壊効果無効", destruction: "自分HP-1" },
         { id: "a5", name: "深淵竜", attr: "ABYSS", dur: 8, exp: 4, type: "PASSIVE", ability: "爆ダメ2倍", destruction: "自分HP-3" },
         { id: "a6", name: "終焉の審判者", attr: "ABYSS", dur: 9, exp: 5, type: "PASSIVE", ability: "敵爆発時自分HP+1", destruction: "自分HP-4" }
@@ -391,7 +385,6 @@
             this.hp = { p1: 25, p2: 25 };
             this.hand = { p1: [], p2: [] };
             
-            // デッキの初期化。同期データがあればそれを使う、なければ自前でシャッフル（ホスト用）
             if (syncedDecks) {
                 this.deck = syncedDecks;
             } else {
@@ -417,7 +410,6 @@
             this.drawCard('p1', 5);
             this.drawCard('p2', 5);
 
-            // ボタンイベント
             document.getElementById('end-phase-btn').onclick = () => this.sendAction({ type: 'NEXT_TURN' });
             document.getElementById('skill-btn').onclick = () => this.toggleSkillMode();
 
@@ -426,7 +418,6 @@
         }
 
         createDeck() {
-            // 完全なコピーを作ってシャッフル
             return JSON.parse(JSON.stringify(FULL_CARD_POOL)).sort(() => Math.random() - 0.5);
         }
 
@@ -434,10 +425,8 @@
             for (let i = 0; i < count; i++) {
                 if (this.deck[player].length > 0 && this.hand[player].length < 10) {
                     const card = this.deck[player].pop();
-                    card.attackBonus = 0;
-                    card.silenced = false;
-                    card.extraExplosion = 0;
-                    card.usedThunderCommand = false;
+                    card.attackBonus = 0; card.silenced = false;
+                    card.extraExplosion = 0; card.usedThunderCommand = false;
                     this.hand[player].push(card);
                 }
             }
@@ -456,15 +445,15 @@
 
         sendAction(data) {
             if (isOnlineMode && this.currentPlayer !== myPlayerRole) return;
-            if (isOnlineMode && conn) {
-                conn.send(data);
-            }
+            // 修正：DEPLOY時に誰が出したかを明示
+            if (data.type === 'DEPLOY') data.player = this.currentPlayer;
+            if (isOnlineMode && conn) conn.send(data);
             this.receiveRemoteAction(data);
         }
 
         receiveRemoteAction(data) {
             if (data.type === 'DEPLOY') {
-                this.executeDeploy(data.handIdx, data.boardIdx);
+                this.executeDeploy(data.handIdx, data.boardIdx, data.player);
             } else if (data.type === 'MOVE') {
                 this.executeMove(data.from, data.to);
             } else if (data.type === 'ATTACK') {
@@ -482,56 +471,28 @@
 
         handleCellClick(idx) {
             if (isOnlineMode && this.currentPlayer !== myPlayerRole) return;
-
             const cardAtCell = this.board[idx];
+            if (cardAtCell) { this.showDetail(cardAtCell); } 
+            else { document.getElementById('detail-panel').style.display = 'none'; }
 
-            // 詳細表示
-            if (cardAtCell) {
-                this.showDetail(cardAtCell);
-            } else {
-                document.getElementById('detail-panel').style.display = 'none';
-            }
-
-            // スキル対象選択待機中
             if (this.waitingForSkillTarget) {
-                this.sendAction({
-                    type: 'SKILL_ACTIVATE',
-                    targetIdx: idx,
-                    skillInfo: this.waitingForSkillTarget
-                });
-                this.waitingForSkillTarget = null;
-                this.isSkillMode = false;
-                return;
+                this.sendAction({ type: 'SKILL_ACTIVATE', targetIdx: idx, skillInfo: this.waitingForSkillTarget });
+                this.waitingForSkillTarget = null; this.isSkillMode = false; return;
             }
 
-            // スキル発動モード
             if (this.isSkillMode) {
-                if (cardAtCell && cardAtCell.owner === this.currentPlayer) {
-                    this.prepareActiveSkill(idx);
-                }
+                if (cardAtCell && cardAtCell.owner === this.currentPlayer) { this.prepareActiveSkill(idx); }
                 return;
             }
 
-            // 手札からの配置
             if (this.selectedHandIdx !== null && !cardAtCell) {
-                if (this.currentDeployCount >= this.deployLimit) {
-                    this.log("配置制限です（1ターン2枚まで）");
-                    return;
-                }
-                this.sendAction({
-                    type: 'DEPLOY',
-                    handIdx: this.selectedHandIdx,
-                    boardIdx: idx
-                });
+                if (this.currentDeployCount >= this.deployLimit) { this.log("配置制限です"); return; }
+                this.sendAction({ type: 'DEPLOY', handIdx: this.selectedHandIdx, boardIdx: idx });
                 return;
             }
 
-            // 盤面のカード操作（移動・攻撃）
             if (cardAtCell && cardAtCell.owner === this.currentPlayer) {
-                if (cardAtCell.isFatigued && cardAtCell.id !== "t1") {
-                    this.log("このカードは疲労しています");
-                    return;
-                }
+                if (cardAtCell.isFatigued && cardAtCell.id !== "t1") { this.log("疲労しています"); return; }
                 this.selectedBoardIdx = (this.selectedBoardIdx === idx) ? null : idx;
                 this.selectedHandIdx = null;
             } 
@@ -560,8 +521,7 @@
                 <div>耐久: ${card.currentDur} / ${card.dur}</div>
                 <div>爆発ダメ: ${card.exp + card.extraExplosion}</div>
                 <div style="margin-top:5px; padding:5px; background:rgba(255,255,255,0.05); color:#ddd; font-size:11px;">
-                    <b>能力:</b> ${card.ability}<br>
-                    <b>破壊時:</b> ${card.destruction}
+                    <b>能力:</b> ${card.ability}<br><b>破壊時:</b> ${card.destruction}
                 </div>
             `;
         }
@@ -569,35 +529,21 @@
         prepareActiveSkill(idx) {
             const card = this.board[idx];
             if (card.isFatigued && card.id !== "t1") return;
-            if (card.type !== "ACTIVE") return;
-
-            if (card.id === "t1") {
-                this.waitingForSkillTarget = { type: 'RECOVER_F', ownerIdx: idx };
-                this.log("回復対象を選択...");
-            } else if (card.id === "t2") {
-                this.waitingForSkillTarget = { type: 'ENEMY_F', ownerIdx: idx };
-                this.log("疲労させる敵を選択...");
-            } else if (card.id === "t4") {
-                this.sendAction({ type: 'T4_CMD', idx: idx });
-            } else if (card.id === "n1") {
-                this.selectedBoardIdx = idx;
-                this.isSkillMode = false;
-                this.log("移動先を選択...");
-            } else if (card.id === "a2") {
-                this.waitingForSkillTarget = { type: 'CURSE', ownerIdx: idx };
-                this.log("呪う敵を選択...");
-            }
+            if (card.id === "t1") { this.waitingForSkillTarget = { type: 'RECOVER_F', ownerIdx: idx }; } 
+            else if (card.id === "t2") { this.waitingForSkillTarget = { type: 'ENEMY_F', ownerIdx: idx }; } 
+            else if (card.id === "t4") { this.sendAction({ type: 'T4_CMD', idx: idx }); } 
+            else if (card.id === "n1") { this.selectedBoardIdx = idx; this.isSkillMode = false; } 
+            else if (card.id === "a2") { this.waitingForSkillTarget = { type: 'CURSE', ownerIdx: idx }; }
             this.updateUI();
         }
 
-        executeDeploy(handIdx, boardIdx) {
-            const card = this.hand[this.currentPlayer].splice(handIdx, 1)[0];
-            card.owner = this.currentPlayer;
-            card.currentDur = card.dur;
-            card.isFatigued = true;
-            card.fatigueTimer = 1;
+        // 修正：引数 player を追加。手札から抜く先を固定。
+        executeDeploy(handIdx, boardIdx, player) {
+            const card = this.hand[player].splice(handIdx, 1)[0];
+            card.owner = player; card.currentDur = card.dur;
+            card.isFatigued = true; card.fatigueTimer = 1;
             this.board[boardIdx] = card;
-            this.currentDeployCount++;
+            if (player === this.currentPlayer) this.currentDeployCount++;
             this.log(`${card.name}を配置`);
             this.selectedHandIdx = null;
             this.updateUI();
@@ -605,13 +551,9 @@
 
         executeMove(from, to) {
             const card = this.board[from];
-            this.board[to] = card;
-            this.board[from] = null;
+            this.board[to] = card; this.board[from] = null;
             card.hasMovedThisTurn = true;
-            if (card.id !== "n3") {
-                card.isFatigued = true;
-                card.fatigueTimer = 1;
-            }
+            if (card.id !== "n3") { card.isFatigued = true; card.fatigueTimer = 1; }
             this.log(`${card.name}が移動`);
             this.updateUI();
         }
@@ -620,62 +562,40 @@
             const attacker = this.board[from];
             const defender = this.board[to];
             let dmg = 1 + attacker.attackBonus;
-
-            // 属性相性
             const atkAttr = ATTRS.indexOf(attacker.attr);
             const defAttr = ATTRS.indexOf(defender.attr);
             if ((atkAttr + 1) % 6 === defAttr) {
-                if (attacker.id === "f3") dmg += 2;
-                else if (attacker.id === "t3") dmg += 3;
-                else dmg += 1;
+                if (attacker.id === "f3") dmg += 2; else if (attacker.id === "t3") dmg += 3; else dmg += 1;
             }
-
-            // 囲み
             if (!this.chainDisabled[this.currentPlayer]) {
                 let req = (attacker.id === "f2" || attacker.id === "e4") ? 1 : 2;
-                if (this.countAdjacents(to, attacker.owner) >= req) {
-                    dmg += (attacker.id === "e1" ? 2 : 1);
-                }
+                if (this.countAdjacents(to, attacker.owner) >= req) dmg += (attacker.id === "e1" ? 2 : 1);
             }
-
             if (this.isSuddenDeath) dmg += 2;
             if (["w3", "e2", "e5"].includes(defender.id)) dmg = Math.max(1, dmg - 1);
-
             this.log(`${attacker.name}の攻撃(${dmg}ダメ)`);
             this.applyDamage(to, dmg);
-
             attacker.hasAttackedThisTurn = true;
-            if (!attacker.usedThunderCommand) {
-                attacker.isFatigued = true;
-                attacker.fatigueTimer = (attacker.id === "t5") ? 1 : 2;
-            }
+            if (!attacker.usedThunderCommand) { attacker.isFatigued = true; attacker.fatigueTimer = (attacker.id === "t5") ? 1 : 2; }
             attacker.usedThunderCommand = false;
             this.updateUI();
         }
 
         applyDamage(idx, amount) {
-            const card = this.board[idx];
-            if (!card) return;
+            const card = this.board[idx]; if (!card) return;
             card.currentDur -= amount;
-            if (card.currentDur <= 0) {
-                this.explode(idx);
-            }
+            if (card.currentDur <= 0) this.explode(idx);
         }
 
         explode(idx) {
             const card = this.board[idx];
             let expDmg = card.exp + card.extraExplosion;
-            if (card.id === "a5") expDmg *= 2;
-            if (this.isSuddenDeath) expDmg += 1;
-
+            if (card.id === "a5") expDmg *= 2; if (this.isSuddenDeath) expDmg += 1;
             this.hp[card.owner] -= expDmg;
             this.log(`${card.name}爆発！${card.owner}に${expDmg}ダメ`);
-
             const enemy = (card.owner === 'p1' ? 'p2' : 'p1');
             this.triggerDestruction(card, enemy);
-
-            this.board[idx] = null;
-            this.checkWin();
+            this.board[idx] = null; this.checkWin();
         }
 
         triggerDestruction(card, enemy) {
@@ -688,147 +608,91 @@
         executeSkillOnTarget(targetIdx, skillInfo) {
             const target = this.board[targetIdx];
             const owner = this.board[skillInfo.ownerIdx];
-
-            if (skillInfo.type === 'RECOVER_F' && target && target.dur <= 4) {
-                target.isFatigued = false; target.fatigueTimer = 0;
-            } else if (skillInfo.type === 'ENEMY_F' && target) {
-                target.isFatigued = true; target.fatigueTimer = 2;
-            } else if (skillInfo.type === 'CURSE' && target) {
-                target.extraExplosion += 1;
-            }
-
+            if (skillInfo.type === 'RECOVER_F' && target && target.dur <= 4) { target.isFatigued = false; target.fatigueTimer = 0; } 
+            else if (skillInfo.type === 'ENEMY_F' && target) { target.isFatigued = true; target.fatigueTimer = 2; } 
+            else if (skillInfo.type === 'CURSE' && target) { target.extraExplosion += 1; }
             if(owner) { owner.isFatigued = true; owner.fatigueTimer = 1; }
             this.updateUI();
         }
 
         nextTurn() {
-            this.board.forEach(c => {
-                if (c && c.owner === this.currentPlayer && c.id === "w1") this.hp[this.currentPlayer] += 1;
-            });
-
+            this.board.forEach(c => { if (c && c.owner === this.currentPlayer && c.id === "w1") this.hp[this.currentPlayer] += 1; });
             this.currentPlayer = (this.currentPlayer === 'p1' ? 'p2' : 'p1');
-            this.isSkillMode = false;
-            this.waitingForSkillTarget = null;
+            this.isSkillMode = false; this.waitingForSkillTarget = null;
             document.getElementById('detail-panel').style.display = 'none';
-
             if (this.skipNextTurn[this.currentPlayer]) {
-                this.log(`${this.currentPlayer}は休みです`);
-                this.skipNextTurn[this.currentPlayer] = false;
-                return this.nextTurn();
+                this.log(`${this.currentPlayer}は休みです`); this.skipNextTurn[this.currentPlayer] = false; return this.nextTurn();
             }
-
-            if (this.currentPlayer === 'p1') {
-                this.turn++;
-                if (this.turn >= 14) this.isSuddenDeath = true;
-            }
-
+            if (this.currentPlayer === 'p1') { this.turn++; if (this.turn >= 14) this.isSuddenDeath = true; }
             if (this.isSuddenDeath) { this.hp.p1--; this.hp.p2--; }
-
-            this.currentDeployCount = 0;
-            this.drawCard(this.currentPlayer);
-            this.recovery();
-            this.updateUI();
-            this.checkWin();
+            this.currentDeployCount = 0; this.drawCard(this.currentPlayer); this.recovery(); this.updateUI(); this.checkWin();
         }
 
         recovery() {
             this.board.forEach(c => {
                 if (c && c.owner === this.currentPlayer) {
-                    c.hasMovedThisTurn = false;
-                    c.hasAttackedThisTurn = false;
-                    if (c.isFatigued) {
-                        c.fatigueTimer--;
-                        if (c.fatigueTimer <= 0) c.isFatigued = false;
-                    }
+                    c.hasMovedThisTurn = false; c.hasAttackedThisTurn = false;
+                    if (c.isFatigued) { c.fatigueTimer--; if (c.fatigueTimer <= 0) c.isFatigued = false; }
                 }
             });
         }
 
         isAdjacent(i1, i2) {
-            const x1 = i1 % 4, y1 = Math.floor(i1 / 4);
-            const x2 = i2 % 4, y2 = Math.floor(i2 / 4);
+            const x1 = i1 % 4, y1 = Math.floor(i1 / 4), x2 = i2 % 4, y2 = Math.floor(i2 / 4);
             return Math.abs(x1 - x2) + Math.abs(y1 - y2) === 1;
         }
 
         canMoveTo(f, t) {
-            const c = this.board[f];
-            if (!c || this.board[t]) return false;
+            const c = this.board[f]; if (!c || this.board[t]) return false;
             return this.isAdjacent(f, t) && (c.id === "n1" || c.id === "n3") && !c.hasMovedThisTurn;
         }
 
         canAttack(f, t) {
-            const c = this.board[f];
-            if (!c) return false;
+            const c = this.board[f]; if (!c) return false;
             return this.isAdjacent(f, t) || c.id === "n5";
         }
 
         countAdjacents(idx, owner) {
-            let count = 0;
-            const x = idx % 4, y = Math.floor(idx / 4);
+            let count = 0; const x = idx % 4, y = Math.floor(idx / 4);
             [[0,1],[0,-1],[1,0],[-1,0]].forEach(([dx, dy]) => {
                 const nx = x+dx, ny = y+dy;
-                if (nx>=0 && nx<4 && ny>=0 && ny<4) {
-                    const t = this.board[ny*4+nx];
-                    if (t && t.owner === owner) count++;
-                }
+                if (nx>=0 && nx<4 && ny>=0 && ny<4) { const t = this.board[ny*4+nx]; if (t && t.owner === owner) count++; }
             });
             return count;
         }
 
-        checkWin() {
-            if (this.hp.p1 <= 0 || this.hp.p2 <= 0) {
-                alert(`決着！P1:${this.hp.p1} P2:${this.hp.p2}`);
-                location.reload();
-            }
-        }
+        checkWin() { if (this.hp.p1 <= 0 || this.hp.p2 <= 0) { alert(`決着！P1:${this.hp.p1} P2:${this.hp.p2}`); location.reload(); } }
 
-        log(m) {
-            const l = document.getElementById('log');
-            l.innerHTML = `<div>> ${m}</div>` + l.innerHTML;
-        }
+        log(m) { const l = document.getElementById('log'); l.innerHTML = `<div>> ${m}</div>` + l.innerHTML; }
 
-        toggleSkillMode() {
-            this.isSkillMode = !this.isSkillMode;
-            this.updateUI();
-        }
+        toggleSkillMode() { this.isSkillMode = !this.isSkillMode; this.updateUI(); }
 
         updateUI() {
-            document.getElementById('p1-hp').innerText = this.hp.p1;
-            document.getElementById('p2-hp').innerText = this.hp.p2;
+            document.getElementById('p1-hp').innerText = this.hp.p1; document.getElementById('p2-hp').innerText = this.hp.p2;
             document.getElementById('turn-label').innerText = `TURN ${this.turn} - ${this.currentPlayer.toUpperCase()}`;
             document.getElementById('deploy-count').innerText = (this.deployLimit - this.currentDeployCount);
-            
-            const skillBtn = document.getElementById('skill-btn');
-            skillBtn.className = this.isSkillMode ? 'active-mode' : '';
-
+            const skillBtn = document.getElementById('skill-btn'); skillBtn.className = this.isSkillMode ? 'active-mode' : '';
             document.querySelectorAll('.cell').forEach((cell, i) => {
                 cell.className = 'cell' + (this.selectedBoardIdx === i ? ' highlight' : '');
-                cell.innerHTML = '';
-                const card = this.board[i];
+                cell.innerHTML = ''; const card = this.board[i];
                 if (card) {
                     const cardEl = document.createElement('div');
                     cardEl.className = `card-on-board attr-${card.attr.toLowerCase()} owner-${card.owner} ${card.isFatigued ? 'fatigued' : ''}`;
                     cardEl.innerHTML = `<div style="font-weight:bold">${card.name}</div><div class="hp-bar-small">HP ${card.currentDur}</div>`;
                     if (card.isFatigued) {
-                        const t = document.createElement('div');
-                        t.className = 'fatigue-timer'; t.innerText = card.fatigueTimer;
-                        cardEl.appendChild(t);
+                        const t = document.createElement('div'); t.className = 'fatigue-timer'; t.innerText = card.fatigueTimer; cardEl.appendChild(t);
                     }
                     cell.appendChild(cardEl);
                 }
             });
-
-            const handEl = document.getElementById('hand');
-            handEl.innerHTML = '';
+            const handEl = document.getElementById('hand'); handEl.innerHTML = '';
             this.hand[this.currentPlayer].forEach((c, i) => {
                 const div = document.createElement('div');
                 div.className = `card-ui attr-${c.attr.toLowerCase()} ${this.selectedHandIdx === i ? 'selected' : ''}`;
                 div.innerHTML = `<b>${c.name}</b><br><small>${c.ability}</small><br>耐:${c.dur} / 爆:${c.exp}`;
                 div.onclick = (e) => {
                     if (isOnlineMode && this.currentPlayer !== myPlayerRole) return;
-                    e.stopPropagation();
-                    this.selectedHandIdx = (this.selectedHandIdx === i) ? null : i;
-                    this.updateUI();
+                    e.stopPropagation(); this.selectedHandIdx = (this.selectedHandIdx === i) ? null : i; this.updateUI();
                 };
                 handEl.appendChild(div);
             });
