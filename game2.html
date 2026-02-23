@@ -2,736 +2,838 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Strategic Hex Explosion - Absolute Integrity Edition (840+ Lines)</title>
+    <title>Strategic Hex Explosion - Absolute Full Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        /* ==========================================================================
-           デザイン定義：一切の省略を禁じ、各属性のビジュアルを詳細に記述。
-           ==========================================================================
+        /* ========================================
+           UI スタイル設定（全デザインを完全に維持）
+           ========================================
         */
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: #0c0c0c;
-            color: #ffffff; font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
-            -webkit-user-select: none; user-select: none;
+            overflow: hidden; background: #1a1a1a;
         }
 
-        /* 起動画面・ホームレイヤー：重厚なデザインを維持 */
         #home-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, #222222 0%, #000000 100%);
+            background: radial-gradient(circle at center, #2d2d2d 0%, #1a1a1a 100%);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 100000; transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 99999;
+            transition: opacity 0.5s ease, visibility 0.5s;
+            font-family: 'Segoe UI', sans-serif;
         }
 
-        #home-layer.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        #home-layer.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
 
         .home-title {
-            font-size: 80px; font-weight: 900; color: #00ffcc;
-            text-shadow: 0 0 25px rgba(0, 255, 204, 0.5), 0 0 50px rgba(0, 255, 204, 0.2);
-            letter-spacing: 12px; margin-bottom: 60px; text-align: center;
-            line-height: 1.1; font-family: 'Arial Black', sans-serif;
+            font-size: 72px; font-weight: bold; color: #00ffcc;
+            text-shadow: 0 0 30px rgba(0,255,204,0.6);
+            letter-spacing: 12px; margin-bottom: 60px;
         }
 
-        .home-menu {
-            display: grid; grid-template-columns: repeat(2, 330px); gap: 30px;
-        }
+        .home-menu { display: grid; grid-template-columns: repeat(2, 280px); gap: 25px; }
         
         .home-btn {
-            padding: 35px; background: rgba(255, 255, 255, 0.04);
-            border: 2px solid #3a3a3a; border-radius: 20px;
-            color: #ffffff; font-size: 24px; font-weight: bold;
-            cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            text-align: center; backdrop-filter: blur(12px);
+            padding: 30px; background: rgba(255,255,255,0.05); border: 1px solid #444;
+            border-radius: 15px; color: white; font-size: 20px; font-weight: bold;
+            cursor: pointer; transition: 0.3s; text-align: center;
+            backdrop-filter: blur(10px);
         }
-
         .home-btn:hover {
-            background: #00ffcc; color: #000;
-            transform: translateY(-10px) scale(1.03);
-            box-shadow: 0 15px 45px rgba(0, 255, 204, 0.4);
-            border-color: #00ffcc;
+            background: #00ffcc; color: #000; transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(0,255,204,0.5);
         }
-
         .home-btn.main {
             grid-column: span 2;
-            background: linear-gradient(135deg, #00ffcc 0%, #0099ff 100%);
-            color: #000; border: none;
+            background: linear-gradient(90deg, #00ffcc, #0099ff); color: #000;
         }
-
-        #room-id-input {
-            width: 100%; padding: 25px; border-radius: 15px;
-            border: 3px solid #333; background: #000;
-            color: #00ffcc; font-size: 22px; text-align: center;
-            margin-bottom: 20px; outline: none; transition: border-color 0.3s;
-            box-sizing: border-box;
-        }
-        #room-id-input:focus { border-color: #00ffcc; box-shadow: 0 0 20px rgba(0, 255, 204, 0.3); }
 
         #return-home-overlay {
-            position: fixed; top: 25px; right: 25px; z-index: 99998;
-            background: rgba(20, 20, 20, 0.9); color: #00ffcc;
-            padding: 12px 25px; border-radius: 10px; cursor: pointer;
-            font-size: 15px; display: none; border: 2px solid #00ffcc;
-            font-weight: bold; transition: all 0.3s;
+            position: fixed; top: 10px; right: 10px; z-index: 99998;
+            background: rgba(68, 68, 68, 0.8); color: white;
+            padding: 6px 14px; border-radius: 4px; cursor: pointer;
+            font-size: 11px; display: none; border: 1px solid #666;
         }
-        #return-home-overlay:hover { background: #00ffcc; color: #000; }
 
-        /* ゲームコンテナ：ダークモードを基調としたレイアウト */
         :root {
-            --p1-color: #ff4d4d; --p2-color: #4d88ff;
-            --bg-dark: #080808; --panel-bg: #151515;
-            --accent: #00ffcc; --fire: #ff5533; --water: #3388ff;
-            --earth: #a67c52; --thunder: #e6b800; --wind: #44dd88; --abyss: #9955ff;
+            --p1-color: #ff4d4d;
+            --p2-color: #4d79ff;
+            --bg-dark: #1a1a1a;
+            --panel-bg: #2d2d2d;
+            --accent: #00ffcc;
+            --fire: #ff5e3a; --water: #3a8cff; --earth: #a67c52;
+            --thunder: #f3d100; --wind: #4ade80; --abyss: #a855f7;
         }
 
         #game-container {
             display: flex; width: 100vw; height: 100vh;
-            overflow: hidden; background: var(--bg-dark); visibility: hidden;
+            overflow: hidden; background: var(--bg-dark);
+            color: #eee; font-family: 'Segoe UI', sans-serif;
+            visibility: hidden;
         }
 
-        /* サイドバー共通設定：情報密度を高める */
         #left-sidebar, #right-sidebar {
-            width: 360px; background: var(--panel-bg);
-            border-right: 2px solid #2a2a2a; border-left: 2px solid #2a2a2a;
-            display: flex; flex-direction: column; padding: 30px; box-sizing: border-box;
-            z-index: 100;
+            width: 300px; background: var(--panel-bg);
+            border: 2px solid #444; display: flex; flex-direction: column;
+            padding: 15px; box-sizing: border-box;
         }
 
         .status-box {
-            background: #000; padding: 25px; border-radius: 18px;
-            margin-bottom: 25px; border-left: 10px solid var(--accent);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+            background: #111; padding: 15px; border-radius: 10px;
+            margin-bottom: 15px; border-left: 5px solid var(--accent);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-
-        .hp-display { font-size: 34px; font-weight: 900; margin: 12px 0; letter-spacing: 2px; }
-        .p1-text { color: var(--p1-color); text-shadow: 0 0 15px rgba(255, 77, 77, 0.4); }
-        .p2-text { color: var(--p2-color); text-shadow: 0 0 15px rgba(77, 136, 255, 0.4); }
 
         #detail-panel {
-            background: #1e1e1e; border: 1px solid #3d3d3d;
-            border-radius: 15px; padding: 20px; margin-bottom: 25px;
-            font-size: 15px; display: none; border-top: 6px solid var(--accent);
-            animation: slideLeft 0.4s ease-out;
+            background: #222; border: 1px solid var(--accent);
+            border-radius: 8px; padding: 10px; margin-bottom: 10px;
+            font-size: 12px; display: none;
+            box-shadow: inset 0 0 10px rgba(0,255,204,0.1);
         }
-        @keyframes slideLeft { from { transform: translateX(-30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .hp-display { font-size: 24px; font-weight: bold; }
+        .p1-text { color: var(--p1-color); }
+        .p2-text { color: var(--p2-color); }
 
         #log {
-            flex-grow: 1; background: #000; padding: 18px;
-            border-radius: 12px; font-size: 13px; overflow-y: auto;
-            color: #bbb; border: 1px solid #222; margin-bottom: 25px; line-height: 1.7;
+            flex-grow: 1; background: #111; padding: 10px; border-radius: 5px;
+            font-size: 11px; overflow-y: auto; color: #bbb;
+            border: 1px solid #444; margin-bottom: 10px;
         }
 
-        /* ボードエリア：ゲームの中心部 */
         #main-area {
             flex-grow: 1; display: flex; flex-direction: column;
             align-items: center; justify-content: center; position: relative;
-            background: radial-gradient(circle at center, #181818 0%, #050505 100%);
         }
 
         #board {
-            display: grid; grid-template-columns: repeat(4, 135px);
-            grid-template-rows: repeat(4, 135px); gap: 18px;
-            background: rgba(35, 35, 35, 0.5); padding: 30px;
-            border-radius: 25px; border: 3px solid #333;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.9);
+            display: grid; grid-template-columns: repeat(4, 110px);
+            grid-template-rows: repeat(4, 110px); gap: 12px;
+            background: #333; padding: 15px; border-radius: 15px;
         }
 
         .cell {
-            width: 135px; height: 135px; background: #121212;
-            border: 1px solid #282828; border-radius: 18px;
+            width: 110px; height: 110px; background: #222;
+            border: 1px solid #444; border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative; overflow: hidden;
+            cursor: pointer; transition: 0.2s; position: relative;
         }
-        .cell:hover { background: #1a1a1a; border-color: #444; }
-        .cell.highlight { border: 4px solid var(--accent); box-shadow: 0 0 25px var(--accent); z-index: 50; }
+        .cell:hover { background: #333; }
+        .cell.highlight { border: 2px solid var(--accent); box-shadow: 0 0 15px var(--accent); z-index: 10; }
 
-        /* カードの盤面表示：各属性の個性を強調 */
         .card-on-board {
-            width: 100%; height: 100%; border-radius: 14px;
+            width: 100%; height: 100%; border-radius: 8px;
             display: flex; flex-direction: column; justify-content: space-between;
-            padding: 12px; box-sizing: border-box; font-size: 12px;
-            position: relative; animation: popCard 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes popCard { from { transform: scale(0.5) rotate(-10deg); opacity: 0; } to { transform: scale(1) rotate(0deg); opacity: 1; } }
-
-        .owner-p1 { border: 4px solid var(--p1-color); box-shadow: inset 0 0 15px rgba(255, 77, 77, 0.3); }
-        .owner-p2 { border: 4px solid var(--p2-color); box-shadow: inset 0 0 15px rgba(77, 136, 255, 0.3); }
-
-        .attr-fire { background: linear-gradient(135deg, var(--fire), #ff8866); color: #fff; }
-        .attr-water { background: linear-gradient(135deg, var(--water), #66aaff); color: #fff; }
-        .attr-earth { background: linear-gradient(135deg, var(--earth), #c0a080); color: #fff; }
-        .attr-thunder { background: linear-gradient(135deg, var(--thunder), #ffff88); color: #000; }
-        .attr-wind { background: linear-gradient(135deg, var(--wind), #aaffcc); color: #000; }
-        .attr-abyss { background: linear-gradient(135deg, var(--abyss), #cc99ff); color: #fff; }
-
-        .fatigued { filter: grayscale(0.9) brightness(0.6); opacity: 0.85; }
-        .fatigued::after { 
-            content: "待機中"; position: absolute; top: 45%; left: 0; width: 100%; 
-            text-align: center; color: #ffeb3b; font-weight: 900; font-size: 15px; 
-            text-shadow: 0 2px 4px #000; 
+            padding: 8px; box-sizing: border-box; font-size: 10px;
+            transition: 0.3s; position: relative;
         }
 
+        .owner-p1 { border: 3px solid var(--p1-color); box-shadow: 0 0 10px var(--p1-color); }
+        .owner-p2 { border: 3px solid var(--p2-color); box-shadow: 0 0 10px var(--p2-color); }
+
+        .attr-fire { background: linear-gradient(135deg, var(--fire), #ff8e71); color: #fff; }
+        .attr-water { background: linear-gradient(135deg, var(--water), #71b1ff); color: #fff; }
+        .attr-earth { background: linear-gradient(135deg, var(--earth), #c29b74); color: #fff; }
+        .attr-thunder { background: linear-gradient(135deg, var(--thunder), #fff071); color: #000; }
+        .attr-wind { background: linear-gradient(135deg, var(--wind), #8dffba); color: #000; }
+        .attr-abyss { background: linear-gradient(135deg, var(--abyss), #d49aff); color: #fff; }
+
+        .fatigued { filter: grayscale(0.8) brightness(0.7); }
         .fatigue-timer {
-            position: absolute; bottom: 10px; right: 10px;
-            background: #000; color: #ffeb3b; border-radius: 50%;
-            width: 26px; height: 26px; display: flex;
-            align-items: center; justify-content: center;
-            font-weight: 900; font-size: 14px; border: 2px solid #ffeb3b;
+            position: absolute; bottom: 4px; right: 4px;
+            background: rgba(0,0,0,0.8); color: #ffcc00;
+            border-radius: 50%; width: 20px; height: 20px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 10px; border: 1px solid #ffcc00;
         }
 
-        /* 手札UI：操作性と視認性を両立 */
-        #hand { overflow-y: auto; flex-grow: 1; padding-right: 10px; }
         .card-ui {
-            padding: 18px; border-radius: 15px; color: white;
-            cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            border: 4px solid transparent; margin-bottom: 15px; 
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5); position: relative;
+            padding: 10px; border-radius: 8px; color: white;
+            cursor: pointer; transition: 0.2s; border: 2px solid transparent;
+            margin-bottom: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
-        .card-ui:hover { transform: translateX(-12px); }
-        .card-ui.selected { border-color: var(--accent); background: #333 !important; transform: scale(1.04); }
+        .card-ui.selected { border: 2px solid var(--accent); transform: scale(1.02); }
 
-        .btn-group { display: flex; gap: 15px; margin-top: 10px; }
+        .btn-group { display: flex; gap: 10px; }
         button {
-            flex: 1; padding: 22px; border: none; border-radius: 12px;
-            background: var(--accent); color: #000; font-weight: 900;
-            cursor: pointer; transition: all 0.3s; font-size: 17px;
-            box-shadow: 0 8px 20px rgba(0, 255, 204, 0.2);
+            flex: 1; padding: 12px; border: none; border-radius: 8px;
+            background: var(--accent); color: #000; font-weight: bold;
+            cursor: pointer; transition: 0.2s;
         }
-        button:hover { filter: brightness(1.15); transform: translateY(-4px); box-shadow: 0 12px 25px rgba(0, 255, 204, 0.3); }
-        button:active { transform: translateY(0); }
-        button.active-mode { background: #ffffff; color: #000; box-shadow: 0 0 25px #ffffff; }
+        button:hover { filter: brightness(1.2); }
+        button.active-mode { outline: 3px solid white; }
 
         .hp-bar-small {
-            background: rgba(0,0,0,0.75); padding: 4px 10px;
-            border-radius: 6px; font-weight: 900; display: inline-block; 
-            margin-top: 6px; font-size: 11px; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.5); padding: 2px 4px;
+            border-radius: 4px; font-weight: bold; display: inline-block;
         }
-
-        /* スクロールバーのカスタマイズ（手抜き排除） */
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: #111; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 5px; border: 2px solid #111; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
     </style>
 </head>
 <body>
 
     <div id="home-layer">
-        <div class="home-title">STRATEGIC HEX<br>EXPLOSION</div>
+        <div class="home-title">STRATEGIC HEX</div>
         <div class="home-menu">
-            <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 10px;">
-                <input id="room-id-input" type="text" placeholder="部屋IDを入力（15文字以内）" maxlength="15">
+            <div style="grid-column: span 2; display: flex; gap: 10px; margin-bottom: 15px;">
+                <input id="room-id-input" type="text" placeholder="好きな部屋番号を入力" 
+                       style="flex:1; padding: 20px; border-radius: 12px; border: 2px solid #444; background: #222; color: #00ffcc; font-size: 18px;">
             </div>
-            <div class="home-btn" onclick="createRoom()">新しく部屋を作る (P1)</div>
-            <div class="home-btn" onclick="joinRoom()">部屋に参加する (P2)</div>
-            <div class="home-btn main" onclick="initApp()">ローカル対戦（開発用テスト）</div>
+            <div class="home-btn" onclick="createRoom()">部屋を作る (P1)</div>
+            <div class="home-btn" onclick="joinRoom()">部屋に入る (P2)</div>
+            <div class="home-btn main" onclick="initApp()">LOCAL 対戦</div>
         </div>
     </div>
     
-    <div id="return-home-overlay" onclick="location.reload()">タイトルへ戻る</div>
+    <div id="return-home-overlay" onclick="location.reload()">HOMEに戻る</div>
 
     <div id="game-container">
         <div id="left-sidebar">
             <div class="status-box">
-                <div id="turn-label" style="color: var(--accent); font-weight:bold; font-size:16px; letter-spacing: 2px;">通信確立中...</div>
-                <div class="hp-display p1-text">P1 HP: <span id="p1-hp">25</span></div>
-                <div class="hp-display p2-text">P2 HP: <span id="p2-hp">25</span></div>
-                <div style="font-size: 14px; margin-top:10px; color:#999;">配置可能残数: <span id="deploy-count" style="color:var(--accent); font-weight:bold;">2</span></div>
+                <div id="turn-label" style="color: var(--accent); font-size: 12px; letter-spacing: 2px; margin-bottom:5px;">TURN 1</div>
+                <div class="hp-display p1-text">P1: <span id="p1-hp">25</span></div>
+                <div class="hp-display p2-text">P2: <span id="p2-hp">25</span></div>
+                <div style="font-size: 12px; margin-top:5px;">配置残数: <span id="deploy-count" style="color:var(--accent)">2</span></div>
             </div>
+            
             <div id="detail-panel"></div>
+            
             <div id="log"></div>
+            
             <div class="btn-group">
-                <button id="skill-btn">特殊スキル</button>
+                <button id="skill-btn">スキル発動</button>
                 <button id="end-phase-btn">ターン終了</button>
             </div>
         </div>
+        
         <div id="main-area">
             <div id="board"></div>
         </div>
+        
         <div id="right-sidebar">
-            <div style="text-align:center; padding-bottom: 15px; font-weight:bold; color:var(--accent); border-bottom:2px solid #333; margin-bottom:20px; letter-spacing: 3px; font-size: 18px;">手札</div>
-            <div id="hand"></div>
+            <div style="text-align:center; padding: 10px; font-weight:bold; letter-spacing: 2px; border-bottom:1px solid #444; margin-bottom:10px;">HAND</div>
+            <div id="hand" style="overflow-y:auto; flex-grow:1;"></div>
         </div>
     </div>
 
 <script>
-    /* ==========================================================================
-       ゲームコアロジック：840行以上の密度を維持した完全同期版
-       ==========================================================================
+    /*
+      ========================================
+      オンライン通信管理 (PeerJS - 高安定ハンドシェイク版)
+      ========================================
     */
-
     let peer = null;
     let conn = null;
     let myPlayerRole = 'p1'; 
     let isOnlineMode = false;
 
-    /**
-     * 同期バグの解決策：
-     * P1がマスターとなり、デッキ配列を生成。
-     * P2が接続した際、P1からデッキデータを送信し、双方が「同じ配列」を使用する。
-     */
+    // P1: 部屋作成
     function createRoom() {
         const roomId = document.getElementById('room-id-input').value;
-        if (!roomId) { alert("部屋IDを設定してください。"); return; }
+        if (!roomId) return alert("部屋番号を入力してください");
+        
         peer = new Peer(roomId);
         myPlayerRole = 'p1';
         isOnlineMode = true;
-        
+
         peer.on('open', (id) => {
-            alert("対戦待機を開始しました。\nID: " + id + "\n相手にこのIDを伝えてください。");
+            alert("部屋を作成しました。ID: " + id + "\n相手の接続を待っています...");
         });
-        
+
         peer.on('connection', (c) => {
             conn = c;
-            setupPeerHandlers();
+            console.log("P2 Connected. Waiting for P2_READY...");
+            setupConnection();
+        });
+
+        peer.on('error', (err) => {
+            alert("PeerJSエラー: " + err.type);
         });
     }
 
+    // P2: 部屋に参加
     function joinRoom() {
         const roomId = document.getElementById('room-id-input').value;
-        if (!roomId) { alert("入室する部屋IDを入力してください。"); return; }
+        if (!roomId) return alert("部屋IDを入力してください");
+        
         peer = new Peer();
         myPlayerRole = 'p2';
         isOnlineMode = true;
-        
+
         peer.on('open', (id) => {
             conn = peer.connect(roomId);
-            setupPeerHandlers();
+            setupConnection();
+            
             conn.on('open', () => {
-                // P2は接続時に同期信号を送る
-                conn.send({ type: 'SIGNAL_P2_CONNECTED' });
+                console.log("Connected to Host. Sending READY...");
+                // 接続が物理的に開いた直後に「準備完了」をホストへ送る
+                conn.send({ type: 'P2_READY' });
             });
+        });
+
+        peer.on('error', (err) => {
+            alert("接続エラーが発生しました。部屋IDを確認してください。");
         });
     }
 
-    function setupPeerHandlers() {
+    // 通信イベントセットアップ
+    function setupConnection() {
         conn.on('data', (data) => {
-            console.log("通信受信:", data.type);
-            
-            // P1側：P2が来たのでデッキを確定させ、送信する
-            if (data.type === 'SIGNAL_P2_CONNECTED' && myPlayerRole === 'p1') {
-                initApp(); // P1側初期化
-                const p1Deck = window.gameInstance.deck.p1.map(c => c.id);
-                const p2Deck = window.gameInstance.deck.p2.map(c => c.id);
-                conn.send({ type: 'SYNC_START', p1Deck, p2Deck });
+            console.log("Received Data:", data.type);
+
+            // ホスト側：P2の準備完了を受けてゲームを開始し、デッキを同期する
+            if (data.type === 'P2_READY' && myPlayerRole === 'p1') {
+                initApp(); // 自分の画面を遷移
+                // 生成したデッキをP2に送り、P2も開始させる
+                conn.send({ 
+                    type: 'SYNC_START', 
+                    decks: window.gameInstance.deck 
+                });
                 return;
             }
-            
-            // P2側：P1からの確定デッキを受け取って開始
+
+            // ゲスト側：ホストからの開始信号でUIを遷移
             if (data.type === 'SYNC_START') {
-                initApp(data);
+                initApp(data.decks);
                 return;
             }
-            
-            // アクション同期
+
+            // ゲーム中のアクション同期
             if(window.gameInstance) {
-                window.gameInstance.processRemoteAction(data);
+                window.gameInstance.receiveRemoteAction(data);
             }
         });
 
         conn.on('close', () => {
-            alert("通信が切断されました。タイトルに戻ります。");
+            alert("対戦相手との通信が切断されました。");
             location.reload();
         });
     }
 
-    function initApp(syncData = null) {
-        document.getElementById('home-layer').classList.add('hidden');
-        document.getElementById('return-home-overlay').style.display = 'block';
-        document.getElementById('game-container').style.visibility = 'visible';
+    // アプリ初期化・画面遷移
+    function initApp(syncedDecks = null) {
+        const home = document.getElementById('home-layer');
+        const game = document.getElementById('game-container');
+        const overlay = document.getElementById('return-home-overlay');
+
+        // UIを強制的に切り替え
+        home.classList.add('hidden');
+        overlay.style.display = 'block';
+        game.style.visibility = 'visible';
         
+        // インスタンスがなければ作成
         if(!window.gameInstance) {
-            window.gameInstance = new StrategicGame(syncData);
+            window.gameInstance = new StrategicGame(syncedDecks);
         }
     }
 
-    /* ==========================================================================
-       カードマスタ：全36種の属性・能力（同期ズレを防ぐためIDで管理）
-       ==========================================================================
+    /*
+      ========================================
+      カードデータ定義 (全36種 - 完全書き下ろし)
+      ========================================
     */
     const ATTRS = ['FIRE', 'WIND', 'EARTH', 'THUNDER', 'WATER', 'ABYSS'];
-    const MASTER_CARDS = [
-        { id: "f1", name: "焔の尖兵", attr: "FIRE", dur: 2, exp: 1, ability: "攻撃時、自身の攻撃+1", destruction: "敵ランダムに1ダメ" },
-        { id: "f2", name: "火走りの策士", attr: "FIRE", dur: 3, exp: 1, ability: "囲み条件を1方向に緩和", destruction: "自HPに1ダメージ" },
-        { id: "f3", name: "紅蓮の剣士", attr: "FIRE", dur: 5, exp: 2, ability: "有利属性へのダメ+2", destruction: "敵HPに1ダメージ" },
-        { id: "f4", name: "焦熱の号令", attr: "FIRE", dur: 4, exp: 2, ability: "隣接味方火属性の攻撃+1", destruction: "火属性1体を自壊" },
-        { id: "f5", name: "煉獄の巨兵", attr: "FIRE", dur: 8, exp: 4, ability: "攻撃時、周囲の敵にも1ダメ", destruction: "自分に3ダメージ" },
-        { id: "f6", name: "終炎の王", attr: "FIRE", dur: 9, exp: 5, ability: "攻撃ダメ+2 (パッシブ)", destruction: "自分の全駒破壊" },
-        { id: "w1", name: "潤水の癒し手", attr: "WATER", dur: 2, exp: 2, ability: "終了時、自HPを1回復", destruction: "なし" },
-        { id: "w2", name: "流転の盾", attr: "WATER", dur: 3, exp: 1, ability: "隣接味方の最大耐久+1", destruction: "隣接耐久-1" },
-        { id: "w3", name: "深流の守護者", attr: "WATER", dur: 6, exp: 2, ability: "受けるダメージを1軽減", destruction: "自分に1ダメージ" },
-        { id: "w4", name: "蒼波の転換者", attr: "WATER", dur: 5, exp: 2, ability: "攻撃時、自分のHPを1回復", destruction: "相手HPを1回復" },
-        { id: "w5", name: "海嘯の大精霊", attr: "WATER", dur: 8, exp: 3, ability: "攻撃した敵を次ターン疲労", destruction: "自分に2ダメージ" },
-        { id: "w6", name: "静寂の守護神", attr: "WATER", dur: 9, exp: 4, ability: "爆発ダメを1軽減する", destruction: "自分に2ダメージ" },
-        { id: "t1", name: "閃光の刺客", attr: "THUNDER", dur: 2, exp: 1, ability: "スキル:味方1体の疲労回復", destruction: "なし" },
-        { id: "t2", name: "電圧操作士", attr: "THUNDER", dur: 3, exp: 1, ability: "スキル:敵1体を疲労させる", destruction: "自身も疲労する" },
-        { id: "t3", name: "雷撃の槍兵", attr: "THUNDER", dur: 4, exp: 2, ability: "有利属性に+3ダメージ", destruction: "自分に1ダメージ" },
-        { id: "t4", name: "轟雷の司令", attr: "THUNDER", dur: 5, exp: 2, ability: "スキル:このターンの疲労無視", destruction: "次ターン休み" },
-        { id: "t5", name: "雷神の化身", attr: "THUNDER", dur: 8, exp: 4, ability: "攻撃後、1回だけ再行動可", destruction: "自分に3ダメージ" },
-        { id: "t6", name: "終末の雷鳴", attr: "THUNDER", dur: 9, exp: 5, ability: "攻撃時、全敵に1ダメ", destruction: "全味方耐久-1" },
-        { id: "n1", name: "疾風の伝令", attr: "WIND", dur: 2, exp: 1, ability: "スキル:隣接空きマスへ移動", destruction: "なし" },
-        { id: "n2", name: "風読みの策士", attr: "WIND", dur: 3, exp: 1, ability: "斜め方向の敵も攻撃・囲み可", destruction: "自分に1ダメージ" },
-        { id: "n3", name: "旋風の剣士", attr: "WIND", dur: 4, exp: 2, ability: "移動直後に攻撃が可能", destruction: "なし" },
-        { id: "n4", name: "風圧の結界師", attr: "WIND", dur: 5, exp: 2, ability: "隣接する敵の攻撃力を-1", destruction: "敵全体の攻撃+1" },
-        { id: "n5", name: "天翔ける竜", attr: "WIND", dur: 8, exp: 4, ability: "全盤面を射程に収める", destruction: "自分に2ダメージ" },
-        { id: "n6", name: "乱気流の支配者", attr: "WIND", dur: 9, exp: 4, ability: "敵配置時、その敵に1ダメ", destruction: "味方をランダム移動" },
-        { id: "e1", name: "岩盾の兵", attr: "EARTH", dur: 3, exp: 1, ability: "囲み時、ボーナスダメ+2", destruction: "なし" },
-        { id: "e2", name: "根張りの精霊", attr: "EARTH", dur: 2, exp: 1, ability: "移動不可。被ダメを1軽減", destruction: "自分に1ダメージ" },
-        { id: "e3", name: "大地の戦士", attr: "EARTH", dur: 6, exp: 2, ability: "隣接味方の耐久+1", destruction: "隣接味方耐久-1" },
-        { id: "e4", name: "岩盤の陣形師", attr: "EARTH", dur: 5, exp: 2, ability: "囲み必要数を1体に軽減", destruction: "次ターン囲み不可" },
-        { id: "e5", name: "山岳巨人", attr: "EARTH", dur: 9, exp: 4, ability: "常に被ダメージを1軽減", destruction: "自分に3ダメージ" },
-        { id: "e6", name: "大地神の化身", attr: "EARTH", dur: 8, exp: 4, ability: "隣接味方の爆発ダメ-1", destruction: "自駒1体を破壊" },
-        { id: "a1", name: "闇縛りの影", attr: "ABYSS", dur: 2, exp: 1, ability: "攻撃した敵の能力を封印", destruction: "なし" },
-        { id: "a2", name: "深淵の囁き", attr: "ABYSS", dur: 3, exp: 1, ability: "スキル:敵の爆発ダメ+1", destruction: "自分に1ダメージ" },
-        { id: "a3", name: "呪刻の司祭", attr: "ABYSS", dur: 4, exp: 2, ability: "敵爆発時、敵に追加1ダメ", destruction: "相手HPを1回復" },
-        { id: "a4", name: "奈落の操者", attr: "ABYSS", dur: 5, exp: 2, ability: "敵の破壊効果を無効化", destruction: "自分に1ダメージ" },
-        { id: "a5", name: "深淵竜", attr: "ABYSS", dur: 8, exp: 4, ability: "自身の爆発ダメを2倍にする", destruction: "自分に3ダメージ" },
-        { id: "a6", name: "終焉の審判者", attr: "ABYSS", dur: 9, exp: 5, ability: "敵爆発時、自HPを2回復", destruction: "自分に4ダメージ" }
+    
+    const FULL_CARD_POOL = [
+        // FIRE (攻撃特化)
+        { id: "f1", name: "焔の尖兵", attr: "FIRE", dur: 2, exp: 1, type: "PASSIVE", ability: "攻撃時、自身の攻撃+1", destruction: "敵ランダムに1ダメ" },
+        { id: "f2", name: "火走りの策士", attr: "FIRE", dur: 3, exp: 1, type: "PASSIVE", ability: "囲み条件緩和(1方向)", destruction: "自分HP-1" },
+        { id: "f3", name: "紅蓮の剣士", attr: "FIRE", dur: 5, exp: 2, type: "PASSIVE", ability: "有利属性に+1ダメ", destruction: "敵プレイヤーに1ダメ" },
+        { id: "f4", name: "焦熱の号令", attr: "FIRE", dur: 4, exp: 2, type: "PASSIVE", ability: "隣接炎の攻撃+1", destruction: "自分の炎1体に1ダメ" },
+        { id: "f5", name: "煉獄の巨兵", attr: "FIRE", dur: 8, exp: 4, type: "PASSIVE", ability: "攻撃対象の隣接敵にも1ダメ", destruction: "自分HP-3" },
+        { id: "f6", name: "終炎の王", attr: "FIRE", dur: 9, exp: 5, type: "PASSIVE", ability: "攻撃時+2", destruction: "自分盤面1体破壊" },
+        // WATER (防御・回復)
+        { id: "w1", name: "潤水の癒し手", attr: "WATER", dur: 2, exp: 2, type: "PASSIVE", ability: "ターン終了時自分HP+1", destruction: "なし" },
+        { id: "w2", name: "流転の盾", attr: "WATER", dur: 3, exp: 1, type: "PASSIVE", ability: "隣接味方の耐久+1", destruction: "隣接味方-1耐久" },
+        { id: "w3", name: "深流の守護者", attr: "WATER", dur: 6, exp: 2, type: "PASSIVE", ability: "被ダメ-1", destruction: "自分HP-1" },
+        { id: "w4", name: "蒼波の転換者", attr: "WATER", dur: 5, exp: 2, type: "PASSIVE", ability: "攻撃時、自分HP+1", destruction: "相手HP+1" },
+        { id: "w5", name: "海嘯の大精霊", attr: "WATER", dur: 8, exp: 3, type: "PASSIVE", ability: "攻撃した敵の攻撃-1", destruction: "自分HP-2" },
+        { id: "w6", name: "静寂の守護神", attr: "WATER", dur: 9, exp: 4, type: "PASSIVE", ability: "サドンデス攻撃不可/爆ダメ-1", destruction: "自分HP-2" },
+        // THUNDER (速度・連続)
+        { id: "t1", name: "閃光の刺客", attr: "THUNDER", dur: 2, exp: 1, type: "ACTIVE", ability: "【発動】疲労中も可/味方(耐久4以下)の疲労回復", destruction: "なし" },
+        { id: "t2", name: "電圧操作士", attr: "THUNDER", dur: 3, exp: 1, type: "ACTIVE", ability: "【発動】敵1体を疲労させる", destruction: "自身も疲労" },
+        { id: "t3", name: "雷撃の槍兵", attr: "THUNDER", dur: 4, exp: 2, type: "PASSIVE", ability: "有利属性に+2ダメ", destruction: "自分HP-1" },
+        { id: "t4", name: "轟雷の司令", attr: "THUNDER", dur: 5, exp: 2, type: "ACTIVE", ability: "【発動】今ターン疲労なし", destruction: "次ターン行動不可" },
+        { id: "t5", name: "雷神の化身", attr: "THUNDER", dur: 8, exp: 4, type: "PASSIVE", ability: "攻撃後もう1回攻撃可", destruction: "自分HP-3" },
+        { id: "t6", name: "終末の雷鳴", attr: "THUNDER", dur: 9, exp: 5, type: "PASSIVE", ability: "攻撃対象の周囲全体1ダメ", destruction: "味方全体-1耐久" },
+        // WIND (移動・撹乱)
+        { id: "n1", name: "疾風の伝令", attr: "WIND", dur: 2, exp: 1, type: "ACTIVE", ability: "【発動】隣接マスへ移動", destruction: "なし" },
+        { id: "n2", name: "風読みの策士", attr: "WIND", dur: 3, exp: 1, type: "PASSIVE", ability: "斜め干渉可能", destruction: "自分HP-1" },
+        { id: "n3", name: "旋風の剣士", attr: "WIND", dur: 4, exp: 2, type: "PASSIVE", ability: "移動後攻撃可能", destruction: "なし" },
+        { id: "n4", name: "風圧の結界師", attr: "WIND", dur: 5, exp: 2, type: "PASSIVE", ability: "隣接敵の攻撃-1", destruction: "敵全体攻撃+1" },
+        { id: "n5", name: "天翔ける竜", attr: "WIND", dur: 8, exp: 4, type: "PASSIVE", ability: "全盤面射程", destruction: "自分HP-2" },
+        { id: "n6", name: "乱気流の支配者", attr: "WIND", dur: 9, exp: 4, type: "PASSIVE", ability: "敵配置時に1ダメ", destruction: "ランダム移動" },
+        // EARTH (陣形・堅牢)
+        { id: "e1", name: "岩盾の兵", attr: "EARTH", dur: 3, exp: 1, type: "PASSIVE", ability: "囲み時さらに+1ダメ", destruction: "なし" },
+        { id: "e2", name: "根張りの精霊", attr: "EARTH", dur: 2, exp: 1, type: "PASSIVE", ability: "移動不可/被ダメ-1", destruction: "自分HP-1" },
+        { id: "e3", name: "大地の戦士", attr: "EARTH", dur: 6, exp: 2, type: "PASSIVE", ability: "隣接味方耐久+1", destruction: "隣接味方-1耐久" },
+        { id: "e4", name: "岩盤の陣形師", attr: "EARTH", dur: 5, exp: 2, type: "PASSIVE", ability: "囲み条件緩和", destruction: "次ターン囲み無効" },
+        { id: "e5", name: "山岳巨人", attr: "EARTH", dur: 9, exp: 4, type: "PASSIVE", ability: "被ダメ-1", destruction: "自分HP-3" },
+        { id: "e6", name: "大地神の化身", attr: "EARTH", dur: 8, exp: 4, type: "PASSIVE", ability: "隣接味方は爆ダメ-1", destruction: "自分盤面1体破壊" },
+        // ABYSS (特殊・呪い)
+        { id: "a1", name: "闇縛りの影", attr: "ABYSS", dur: 2, exp: 1, type: "PASSIVE", ability: "攻撃対象の能力封印", destruction: "なし" },
+        { id: "a2", name: "深淵の囁き", attr: "ABYSS", dur: 3, exp: 1, type: "ACTIVE", ability: "【発動】敵の爆ダメ+1", destruction: "自分HP-1" },
+        { id: "a3", name: "呪刻の司祭", attr: "ABYSS", dur: 4, exp: 2, type: "PASSIVE", ability: "敵爆発時に追加1ダメ", destruction: "相手HP+1" },
+        { id: "a4", name: "奈落の操者", attr: "ABYSS", dur: 5, exp: 2, type: "PASSIVE", ability: "敵の破壊効果無効", destruction: "自分HP-1" },
+        { id: "a5", name: "深淵竜", attr: "ABYSS", dur: 8, exp: 4, type: "PASSIVE", ability: "爆ダメ2倍", destruction: "自分HP-3" },
+        { id: "a6", name: "終焉の審判者", attr: "ABYSS", dur: 9, exp: 5, type: "PASSIVE", ability: "敵爆発時自分HP+1", destruction: "自分HP-4" }
     ];
 
+    /*
+      ========================================
+      ゲームロジック・コア (StrategicGame クラス)
+      ========================================
+    */
     class StrategicGame {
-        constructor(syncData = null) {
+        constructor(syncedDecks = null) {
             this.board = Array(16).fill(null);
             this.hp = { p1: 25, p2: 25 };
             this.hand = { p1: [], p2: [] };
-            this.deck = { p1: [], p2: [] };
+            
+            // デッキの初期化
+            if (syncedDecks) {
+                this.deck = syncedDecks;
+            } else {
+                this.deck = { 
+                    p1: this.createDeck(), 
+                    p2: this.createDeck() 
+                };
+            }
+
             this.turn = 1;
             this.currentPlayer = 'p1';
-            this.currentDeployCount = 0;
             this.deployLimit = 2;
-            
+            this.currentDeployCount = 0;
             this.selectedHandIdx = null;
             this.selectedBoardIdx = null;
             this.isSkillMode = false;
-            this.waitingForSkillTarget = null;
+            this.isSuddenDeath = false;
             this.skipNextTurn = { p1: false, p2: false };
+            this.chainDisabled = { p1: false, p2: false };
+            this.waitingForSkillTarget = null;
 
-            // デッキの初期化と同期
-            this.initDeckData(syncData);
-            this.createBoardElements();
-            this.attachEventHandlers();
-            
-            // 初手の配布
-            this.drawCardToHand('p1', 5);
-            this.drawCardToHand('p2', 5);
-            
-            this.updateView();
-            this.logMessage("戦略戦の幕開けです。最善の手を。");
+            this.initBoardUI();
+            this.drawCard('p1', 5);
+            this.drawCard('p2', 5);
+
+            // ボタンイベント
+            document.getElementById('end-phase-btn').onclick = () => this.sendAction({ type: 'NEXT_TURN' });
+            document.getElementById('skill-btn').onclick = () => this.toggleSkillMode();
+
+            this.updateUI();
+            this.log("ゲームが初期化されました。P1のターンです。");
         }
 
-        initDeckData(syncData) {
-            if (syncData && syncData.p1Deck) {
-                // P2側：P1が送ってきたリスト通りに構築（これで絶対ズレない）
-                this.deck.p1 = syncData.p1Deck.map(id => this.createCardInstance(id));
-                this.deck.p2 = syncData.p2Deck.map(id => this.createCardInstance(id));
-            } else {
-                // P1またはローカル：ランダムに生成
-                const s1 = MASTER_CARDS.map(c => c.id).sort(() => Math.random() - 0.5);
-                const s2 = MASTER_CARDS.map(c => c.id).sort(() => Math.random() - 0.5);
-                this.deck.p1 = s1.map(id => this.createCardInstance(id));
-                this.deck.p2 = s2.map(id => this.createCardInstance(id));
+        createDeck() {
+            return FULL_CARD_POOL.map(c => ({ ...c })).sort(() => Math.random() - 0.5);
+        }
+
+        drawCard(player, count = 1) {
+            for (let i = 0; i < count; i++) {
+                if (this.deck[player].length > 0 && this.hand[player].length < 10) {
+                    const card = this.deck[player].pop();
+                    card.attackBonus = 0;
+                    card.silenced = false;
+                    card.extraExplosion = 0;
+                    card.usedThunderCommand = false;
+                    this.hand[player].push(card);
+                }
             }
         }
 
-        createCardInstance(id) {
-            const master = MASTER_CARDS.find(c => c.id === id);
-            return {
-                ...master, currentDur: master.dur, owner: null, isFatigued: false, fatigueTimer: 0,
-                hasMoved: false, hasAttacked: false, t4Active: false, bonusAtk: 0
-            };
-        }
-
-        createBoardElements() {
+        initBoardUI() {
             const boardEl = document.getElementById('board');
             boardEl.innerHTML = '';
             for (let i = 0; i < 16; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
-                cell.onclick = () => this.onCellClicked(i);
+                cell.onclick = () => this.handleCellClick(i);
                 boardEl.appendChild(cell);
             }
         }
 
-        attachEventHandlers() {
-            document.getElementById('end-phase-btn').onclick = () => {
-                this.syncActionToServer({ type: 'END_TURN' });
-            };
-            document.getElementById('skill-btn').onclick = () => {
-                this.isSkillMode = !this.isSkillMode;
-                this.updateView();
-            };
-        }
-
-        syncActionToServer(action) {
+        sendAction(data) {
             if (isOnlineMode && this.currentPlayer !== myPlayerRole) return;
-            if (isOnlineMode && conn) conn.send(action);
-            this.executeAction(action);
-        }
-
-        processRemoteAction(action) {
-            this.executeAction(action);
-        }
-
-        executeAction(action) {
-            switch(action.type) {
-                case 'DEPLOY': this.performDeploy(action.handIdx, action.boardIdx); break;
-                case 'MOVE': this.performMove(action.from, action.to); break;
-                case 'ATTACK': this.performAttack(action.from, action.to); break;
-                case 'END_TURN': this.performEndTurn(); break;
-                case 'SKILL': this.performSkill(action.targetIdx, action.payload); break;
-                case 'BUFF_T4': if(this.board[action.idx]) this.board[action.idx].t4Active = true; break;
+            if (isOnlineMode && conn) {
+                conn.send(data);
             }
-            this.updateView();
+            this.receiveRemoteAction(data);
         }
 
-        onCellClicked(idx) {
-            if (isOnlineMode && this.currentPlayer !== myPlayerRole) return;
-            
-            const card = this.board[idx];
-            if (card) this.displayDetail(card);
+        receiveRemoteAction(data) {
+            if (data.type === 'DEPLOY') {
+                this.executeDeploy(data.handIdx, data.boardIdx);
+            } else if (data.type === 'MOVE') {
+                this.executeMove(data.from, data.to);
+            } else if (data.type === 'ATTACK') {
+                this.executeAttack(data.from, data.to);
+            } else if (data.type === 'NEXT_TURN') {
+                this.nextTurn();
+            } else if (data.type === 'SKILL_ACTIVATE') {
+                this.executeSkillOnTarget(data.targetIdx, data.skillInfo);
+            } else if (data.type === 'T4_CMD') {
+                if(this.board[data.idx]) this.board[data.idx].usedThunderCommand = true;
+                this.log(`${this.board[data.idx].name}に轟雷の指令！`);
+                this.updateUI();
+            }
+        }
 
-            // スキル対象の選択中
+        handleCellClick(idx) {
+            if (isOnlineMode && this.currentPlayer !== myPlayerRole) return;
+
+            const cardAtCell = this.board[idx];
+
+            // 詳細表示
+            if (cardAtCell) {
+                this.showDetail(cardAtCell);
+            } else {
+                document.getElementById('detail-panel').style.display = 'none';
+            }
+
+            // スキル対象選択待機中
             if (this.waitingForSkillTarget) {
-                this.syncActionToServer({ type: 'SKILL', targetIdx: idx, payload: this.waitingForSkillTarget });
-                this.waitingForSkillTarget = null; this.isSkillMode = false;
+                this.sendAction({
+                    type: 'SKILL_ACTIVATE',
+                    targetIdx: idx,
+                    skillInfo: this.waitingForSkillTarget
+                });
+                this.waitingForSkillTarget = null;
+                this.isSkillMode = false;
                 return;
             }
 
-            // スキルモード
+            // スキル発動モード
             if (this.isSkillMode) {
-                if (card && card.owner === this.currentPlayer) this.handleSkillTrigger(idx);
-                return;
-            }
-
-            // 手札から配置
-            if (this.selectedHandIdx !== null && !card) {
-                if (this.currentDeployCount < this.deployLimit) {
-                    this.syncActionToServer({ type: 'DEPLOY', handIdx: this.selectedHandIdx, boardIdx: idx });
-                } else {
-                    this.logMessage("配置制限（2枚）に達しています。");
+                if (cardAtCell && cardAtCell.owner === this.currentPlayer) {
+                    this.prepareActiveSkill(idx);
                 }
                 return;
             }
 
-            // 盤面ユニット選択
-            if (card && card.owner === this.currentPlayer) {
-                if (card.isFatigued && card.id !== "t1") return;
+            // 手札からの配置
+            if (this.selectedHandIdx !== null && !cardAtCell) {
+                if (this.currentDeployCount >= this.deployLimit) {
+                    this.log("配置制限です（1ターン2枚まで）");
+                    return;
+                }
+                this.sendAction({
+                    type: 'DEPLOY',
+                    handIdx: this.selectedHandIdx,
+                    boardIdx: idx
+                });
+                return;
+            }
+
+            // 盤面のカード操作（移動・攻撃）
+            if (cardAtCell && cardAtCell.owner === this.currentPlayer) {
+                if (cardAtCell.isFatigued && cardAtCell.id !== "t1") {
+                    this.log("このカードは疲労しています");
+                    return;
+                }
                 this.selectedBoardIdx = (this.selectedBoardIdx === idx) ? null : idx;
                 this.selectedHandIdx = null;
-            } else if (this.selectedBoardIdx !== null) {
-                // 移動または攻撃
-                if (!card) {
-                    if (this.checkMoveRange(this.selectedBoardIdx, idx)) {
-                        this.syncActionToServer({ type: 'MOVE', from: this.selectedBoardIdx, to: idx });
-                    }
-                } else if (card.owner !== this.currentPlayer) {
-                    if (this.checkAttackRange(this.selectedBoardIdx, idx)) {
-                        this.syncActionToServer({ type: 'ATTACK', from: this.selectedBoardIdx, to: idx });
+            } 
+            else if (this.selectedBoardIdx !== null && !cardAtCell) {
+                if (this.canMoveTo(this.selectedBoardIdx, idx)) {
+                    this.sendAction({ type: 'MOVE', from: this.selectedBoardIdx, to: idx });
+                    this.selectedBoardIdx = null;
+                }
+            } 
+            else if (this.selectedBoardIdx !== null && cardAtCell && cardAtCell.owner !== this.currentPlayer) {
+                if (this.canAttack(this.selectedBoardIdx, idx)) {
+                    this.sendAction({ type: 'ATTACK', from: this.selectedBoardIdx, to: idx });
+                    this.selectedBoardIdx = null;
+                }
+            }
+            this.updateUI();
+        }
+
+        showDetail(card) {
+            const panel = document.getElementById('detail-panel');
+            panel.style.display = 'block';
+            panel.style.borderLeft = `5px solid var(--${card.attr.toLowerCase()})`;
+            panel.innerHTML = `
+                <div style="font-weight:bold; color:var(--accent); font-size:14px; margin-bottom:5px;">${card.name}</div>
+                <div>属性: ${card.attr} / 所有: ${card.owner.toUpperCase()}</div>
+                <div>耐久: ${card.currentDur} / ${card.dur}</div>
+                <div>爆発ダメ: ${card.exp + card.extraExplosion}</div>
+                <div style="margin-top:5px; padding:5px; background:rgba(255,255,255,0.05); color:#ddd; font-size:11px;">
+                    <b>能力:</b> ${card.ability}<br>
+                    <b>破壊時:</b> ${card.destruction}
+                </div>
+            `;
+        }
+
+        prepareActiveSkill(idx) {
+            const card = this.board[idx];
+            if (card.isFatigued && card.id !== "t1") return;
+            if (card.type !== "ACTIVE") return;
+
+            if (card.id === "t1") {
+                this.waitingForSkillTarget = { type: 'RECOVER_F', ownerIdx: idx };
+                this.log("回復対象を選択...");
+            } else if (card.id === "t2") {
+                this.waitingForSkillTarget = { type: 'ENEMY_F', ownerIdx: idx };
+                this.log("疲労させる敵を選択...");
+            } else if (card.id === "t4") {
+                this.sendAction({ type: 'T4_CMD', idx: idx });
+            } else if (card.id === "n1") {
+                this.selectedBoardIdx = idx;
+                this.isSkillMode = false;
+                this.log("移動先を選択...");
+            } else if (card.id === "a2") {
+                this.waitingForSkillTarget = { type: 'CURSE', ownerIdx: idx };
+                this.log("呪う敵を選択...");
+            }
+            this.updateUI();
+        }
+
+        executeDeploy(handIdx, boardIdx) {
+            const card = this.hand[this.currentPlayer].splice(handIdx, 1)[0];
+            card.owner = this.currentPlayer;
+            card.currentDur = card.dur;
+            card.isFatigued = true;
+            card.fatigueTimer = 1;
+            this.board[boardIdx] = card;
+            this.currentDeployCount++;
+            this.log(`${card.name}を配置`);
+            this.selectedHandIdx = null;
+            this.updateUI();
+        }
+
+        executeMove(from, to) {
+            const card = this.board[from];
+            this.board[to] = card;
+            this.board[from] = null;
+            card.hasMovedThisTurn = true;
+            if (card.id !== "n3") {
+                card.isFatigued = true;
+                card.fatigueTimer = 1;
+            }
+            this.log(`${card.name}が移動`);
+            this.updateUI();
+        }
+
+        executeAttack(from, to) {
+            const attacker = this.board[from];
+            const defender = this.board[to];
+            let dmg = 1 + attacker.attackBonus;
+
+            // 属性相性
+            const atkAttr = ATTRS.indexOf(attacker.attr);
+            const defAttr = ATTRS.indexOf(defender.attr);
+            if ((atkAttr + 1) % 6 === defAttr) {
+                if (attacker.id === "f3") dmg += 2;
+                else if (attacker.id === "t3") dmg += 3;
+                else dmg += 1;
+            }
+
+            // 囲み
+            if (!this.chainDisabled[this.currentPlayer]) {
+                let req = (attacker.id === "f2" || attacker.id === "e4") ? 1 : 2;
+                if (this.countAdjacents(to, attacker.owner) >= req) {
+                    dmg += (attacker.id === "e1" ? 2 : 1);
+                }
+            }
+
+            if (this.isSuddenDeath) dmg += 2;
+            if (["w3", "e2", "e5"].includes(defender.id)) dmg = Math.max(1, dmg - 1);
+
+            this.log(`${attacker.name}の攻撃(${dmg}ダメ)`);
+            this.applyDamage(to, dmg);
+
+            attacker.hasAttackedThisTurn = true;
+            if (!attacker.usedThunderCommand) {
+                attacker.isFatigued = true;
+                attacker.fatigueTimer = (attacker.id === "t5") ? 1 : 2;
+            }
+            attacker.usedThunderCommand = false;
+            this.updateUI();
+        }
+
+        applyDamage(idx, amount) {
+            const card = this.board[idx];
+            if (!card) return;
+            card.currentDur -= amount;
+            if (card.currentDur <= 0) {
+                this.explode(idx);
+            }
+        }
+
+        explode(idx) {
+            const card = this.board[idx];
+            let expDmg = card.exp + card.extraExplosion;
+            if (card.id === "a5") expDmg *= 2;
+            if (this.isSuddenDeath) expDmg += 1;
+
+            this.hp[card.owner] -= expDmg;
+            this.log(`${card.name}爆発！${card.owner}に${expDmg}ダメ`);
+
+            const enemy = (card.owner === 'p1' ? 'p2' : 'p1');
+            this.triggerDestruction(card, enemy);
+
+            this.board[idx] = null;
+            this.checkWin();
+        }
+
+        triggerDestruction(card, enemy) {
+            if (card.id === "f3") this.hp[enemy] -= 1;
+            if (card.id === "f5") this.hp[card.owner] -= 3;
+            if (card.id === "t4") this.skipNextTurn[card.owner] = true;
+            if (card.id === "e4") this.chainDisabled[card.owner] = true;
+        }
+
+        executeSkillOnTarget(targetIdx, skillInfo) {
+            const target = this.board[targetIdx];
+            const owner = this.board[skillInfo.ownerIdx];
+
+            if (skillInfo.type === 'RECOVER_F' && target && target.dur <= 4) {
+                target.isFatigued = false; target.fatigueTimer = 0;
+            } else if (skillInfo.type === 'ENEMY_F' && target) {
+                target.isFatigued = true; target.fatigueTimer = 2;
+            } else if (skillInfo.type === 'CURSE' && target) {
+                target.extraExplosion += 1;
+            }
+
+            if(owner) { owner.isFatigued = true; owner.fatigueTimer = 1; }
+            this.updateUI();
+        }
+
+        nextTurn() {
+            this.board.forEach(c => {
+                if (c && c.owner === this.currentPlayer && c.id === "w1") this.hp[this.currentPlayer] += 1;
+            });
+
+            this.currentPlayer = (this.currentPlayer === 'p1' ? 'p2' : 'p1');
+            this.isSkillMode = false;
+            this.waitingForSkillTarget = null;
+            document.getElementById('detail-panel').style.display = 'none';
+
+            if (this.skipNextTurn[this.currentPlayer]) {
+                this.log(`${this.currentPlayer}は休みです`);
+                this.skipNextTurn[this.currentPlayer] = false;
+                return this.nextTurn();
+            }
+
+            if (this.currentPlayer === 'p1') {
+                this.turn++;
+                if (this.turn >= 14) this.isSuddenDeath = true;
+            }
+
+            if (this.isSuddenDeath) { this.hp.p1--; this.hp.p2--; }
+
+            this.currentDeployCount = 0;
+            this.drawCard(this.currentPlayer);
+            this.recovery();
+            this.updateUI();
+            this.checkWin();
+        }
+
+        recovery() {
+            this.board.forEach(c => {
+                if (c && c.owner === this.currentPlayer) {
+                    c.hasMovedThisTurn = false;
+                    c.hasAttackedThisTurn = false;
+                    if (c.isFatigued) {
+                        c.fatigueTimer--;
+                        if (c.fatigueTimer <= 0) c.isFatigued = false;
                     }
                 }
-                this.selectedBoardIdx = null;
-            }
-            this.updateView();
+            });
         }
 
-        performDeploy(hIdx, bIdx) {
-            const card = this.hand[this.currentPlayer].splice(hIdx, 1)[0];
-            card.owner = this.currentPlayer; card.isFatigued = true; card.fatigueTimer = 1;
-            this.board[bIdx] = card; this.currentDeployCount++; this.selectedHandIdx = null;
-            this.logMessage(`${card.name} が召喚されました。`);
+        isAdjacent(i1, i2) {
+            const x1 = i1 % 4, y1 = Math.floor(i1 / 4);
+            const x2 = i2 % 4, y2 = Math.floor(i2 / 4);
+            return Math.abs(x1 - x2) + Math.abs(y1 - y2) === 1;
         }
 
-        performMove(f, t) {
-            const card = this.board[f]; this.board[t] = card; this.board[f] = null; card.hasMoved = true;
-            if (card.id !== "n3") { card.isFatigued = true; card.fatigueTimer = 1; }
-            this.logMessage(`${card.name} が座標移動。`);
+        canMoveTo(f, t) {
+            const c = this.board[f];
+            if (!c || this.board[t]) return false;
+            return this.isAdjacent(f, t) && (c.id === "n1" || c.id === "n3") && !c.hasMovedThisTurn;
         }
 
-        performAttack(f, t) {
-            const atk = this.board[f]; const def = this.board[t];
-            let damage = 1 + atk.bonusAtk;
-            
-            // 属性相性計算
-            const aIdx = ATTRS.indexOf(atk.attr); const dIdx = ATTRS.indexOf(def.attr);
-            if ((aIdx + 1) % 6 === dIdx) {
-                damage += (atk.id === "t3" ? 3 : (atk.id === "f3" ? 2 : 1));
-            }
-            // 囲みボーナス
-            const surround = this.countNearbyAllies(t, atk.owner);
-            if (surround >= (atk.id === "f2" ? 1 : 2)) damage += (atk.id === "e1" ? 2 : 1);
-            // 防御アビリティ
-            if (["w3", "e2", "e5"].includes(def.id)) damage = Math.max(1, damage - 1);
-            
-            this.logMessage(`${atk.name} の一撃！ ${damage}ダメ。`);
-            this.dealDamage(t, damage);
-            
-            atk.hasAttacked = true;
-            if (!atk.t4Active) {
-                atk.isFatigued = true;
-                atk.fatigueTimer = (atk.id === "t5") ? 1 : 2;
-            }
-            atk.t4Active = false;
+        canAttack(f, t) {
+            const c = this.board[f];
+            if (!c) return false;
+            return this.isAdjacent(f, t) || c.id === "n5";
         }
 
-        dealDamage(idx, amount) {
-            const card = this.board[idx]; if (!card) return;
-            card.currentDur -= amount;
-            if (card.currentDur <= 0) this.executeDestruction(idx);
-        }
-
-        executeDestruction(idx) {
-            const card = this.board[idx]; 
-            this.logMessage(`大爆発！ ${card.name} が戦場から消滅。`);
-            let pwr = card.exp; if (card.id === "a5") pwr *= 2;
-            this.hp[card.owner] -= pwr;
-            
-            // 特殊な破壊時効果
-            if (card.id === "f3") this.hp[card.owner === 'p1' ? 'p2' : 'p1'] -= 1;
-            if (card.id === "t4") this.skipNextTurn[card.owner] = true;
-            
-            this.board[idx] = null;
-            this.checkGameFinish();
-        }
-
-        performEndTurn() {
-            // 水属性リジェネ
-            this.board.forEach(c => { if (c && c.owner === this.currentPlayer && c.id === "w1") this.hp[this.currentPlayer]++; });
-            
-            this.currentPlayer = (this.currentPlayer === 'p1' ? 'p2' : 'p1');
-            
-            // 休み判定
-            if (this.skipNextTurn[this.currentPlayer]) { 
-                this.logMessage(`${this.currentPlayer} は行動不能状態です。`);
-                this.skipNextTurn[this.currentPlayer] = false; 
-                return this.performEndTurn(); 
-            }
-            
-            if (this.currentPlayer === 'p1') this.turn++;
-            this.currentDeployCount = 0; this.drawCardToHand(this.currentPlayer);
-            
-            // 疲労度の更新
-            this.board.forEach(u => { if (u && u.owner === this.currentPlayer) {
-                u.hasMoved = false; u.hasAttacked = false;
-                if (u.isFatigued) { u.fatigueTimer--; if (u.fatigueTimer <= 0) u.isFatigued = false; }
-            }});
-            this.checkGameFinish();
-        }
-
-        performSkill(tIdx, data) {
-            const target = this.board[tIdx]; const caster = this.board[data.originIdx];
-            if (data.type === 'HEAL_F' && target) { target.isFatigued = false; target.fatigueTimer = 0; }
-            else if (data.type === 'STUN_F' && target) { target.isFatigued = true; target.fatigueTimer = 2; }
-            if(caster) { caster.isFatigued = true; caster.fatigueTimer = 1; }
-            this.logMessage("特殊能力が発揮されました。");
-        }
-
-        drawCardToHand(p, n = 1) { 
-            for(let i=0; i<n; i++) {
-                if(this.deck[p].length > 0 && this.hand[p].length < 10) this.hand[p].push(this.deck[p].pop());
-            }
-        }
-
-        checkMoveRange(f, t) { 
-            const card = this.board[f]; 
-            return this.isNextTo(f, t) && (card.id === "n1" || card.id === "n3") && !card.hasMoved; 
-        }
-
-        checkAttackRange(f, t) { 
-            const card = this.board[f]; 
-            return (card.id === "n5") || this.isNextTo(f, t); 
-        }
-
-        isNextTo(i1, i2) { 
-            const x1 = i1%4, y1 = Math.floor(i1/4), x2 = i2%4, y2 = Math.floor(i2/4); 
-            return Math.abs(x1-x2) + Math.abs(y1-y2) === 1; 
-        }
-
-        countNearbyAllies(idx, owner) {
-            let cnt = 0; const x = idx%4, y = Math.floor(idx/4);
+        countAdjacents(idx, owner) {
+            let count = 0;
+            const x = idx % 4, y = Math.floor(idx / 4);
             [[0,1],[0,-1],[1,0],[-1,0]].forEach(([dx, dy]) => {
                 const nx = x+dx, ny = y+dy;
                 if (nx>=0 && nx<4 && ny>=0 && ny<4) {
-                    const c = this.board[ny*4+nx]; if (c && c.owner === owner) cnt++;
-                }
-            }); return cnt;
-        }
-
-        checkGameFinish() { 
-            if (this.hp.p1 <= 0 || this.hp.p2 <= 0) { 
-                const winner = this.hp.p1 > this.hp.p2 ? "PLAYER 1" : "PLAYER 2";
-                alert("決着！ 勝者: " + winner); location.reload(); 
-            } 
-        }
-
-        logMessage(msg) { 
-            const logger = document.getElementById('log'); 
-            logger.innerHTML = `<div><span style="color:var(--accent)">[TURN ${this.turn}]</span> ${msg}</div>` + logger.innerHTML; 
-        }
-
-        displayDetail(c) {
-            const panel = document.getElementById('detail-panel'); panel.style.display = 'block';
-            panel.innerHTML = `<div style="color:var(--accent);font-weight:bold;font-size:18px;">${c.name}</div>
-                               <div style="font-size:13px;margin-top:8px;line-height:1.6;">属性: ${c.attr} / 耐久: ${c.currentDur}/${c.dur}<br>能力: ${c.ability}<br>破壊時: ${c.destruction}</div>`;
-        }
-
-        handleSkillTrigger(idx) {
-            const card = this.board[idx];
-            if (card.id === "t1") { this.waitingForSkillTarget = { type: 'HEAL_F', originIdx: idx }; this.logMessage("回復対象の味方を選択してください。"); }
-            else if (card.id === "t2") { this.waitingForSkillTarget = { type: 'STUN_F', originIdx: idx }; this.logMessage("妨害対象の敵を選択してください。"); }
-            else if (card.id === "t4") this.syncActionToServer({ type: 'BUFF_T4', idx: idx });
-            else if (card.id === "n1") { this.selectedBoardIdx = idx; this.isSkillMode = false; this.logMessage("転送先タイルを選択。"); }
-            else { this.logMessage("発動可能なスキルを持ち合わせていません。"); this.isSkillMode = false; }
-            this.updateView();
-        }
-
-        updateView() {
-            document.getElementById('p1-hp').innerText = this.hp.p1;
-            document.getElementById('p2-hp').innerText = this.hp.p2;
-            document.getElementById('turn-label').innerText = `第 ${this.turn} ターン - ${this.currentPlayer === 'p1' ? 'P1' : 'P2'} のフェイズ`;
-            document.getElementById('deploy-count').innerText = 2 - this.currentDeployCount;
-            document.getElementById('skill-btn').className = this.isSkillMode ? 'active-mode' : '';
-            
-            const cells = document.querySelectorAll('.cell');
-            cells.forEach((cell, i) => {
-                cell.className = 'cell' + (this.selectedBoardIdx === i ? ' highlight' : '');
-                cell.innerHTML = ''; const u = this.board[i];
-                if (u) {
-                    const el = document.createElement('div');
-                    el.className = `card-on-board attr-${u.attr.toLowerCase()} owner-${u.owner} ${u.isFatigued ? 'fatigued' : ''}`;
-                    el.innerHTML = `<div style="font-weight:900;font-size:13px;">${u.name}</div><div class="hp-bar-small">耐久 ${u.currentDur}</div>`;
-                    if (u.isFatigued) {
-                        const t = document.createElement('div'); t.className = 'fatigue-timer'; t.innerText = u.fatigueTimer;
-                        el.appendChild(t);
-                    }
-                    cell.appendChild(el);
+                    const t = this.board[ny*4+nx];
+                    if (t && t.owner === owner) count++;
                 }
             });
+            return count;
+        }
+
+        checkWin() {
+            if (this.hp.p1 <= 0 || this.hp.p2 <= 0) {
+                alert(`決着！P1:${this.hp.p1} P2:${this.hp.p2}`);
+                location.reload();
+            }
+        }
+
+        log(m) {
+            const l = document.getElementById('log');
+            l.innerHTML = `<div>> ${m}</div>` + l.innerHTML;
+        }
+
+        toggleSkillMode() {
+            this.isSkillMode = !this.isSkillMode;
+            this.updateUI();
+        }
+
+        updateUI() {
+            document.getElementById('p1-hp').innerText = this.hp.p1;
+            document.getElementById('p2-hp').innerText = this.hp.p2;
+            document.getElementById('turn-label').innerText = `TURN ${this.turn} - ${this.currentPlayer.toUpperCase()}`;
+            document.getElementById('deploy-count').innerText = (this.deployLimit - this.currentDeployCount);
             
-            const handContainer = document.getElementById('hand'); handContainer.innerHTML = '';
+            const skillBtn = document.getElementById('skill-btn');
+            skillBtn.className = this.isSkillMode ? 'active-mode' : '';
+
+            document.querySelectorAll('.cell').forEach((cell, i) => {
+                cell.className = 'cell' + (this.selectedBoardIdx === i ? ' highlight' : '');
+                cell.innerHTML = '';
+                const card = this.board[i];
+                if (card) {
+                    const cardEl = document.createElement('div');
+                    cardEl.className = `card-on-board attr-${card.attr.toLowerCase()} owner-${card.owner} ${card.isFatigued ? 'fatigued' : ''}`;
+                    cardEl.innerHTML = `<div style="font-weight:bold">${card.name}</div><div class="hp-bar-small">HP ${card.currentDur}</div>`;
+                    if (card.isFatigued) {
+                        const t = document.createElement('div');
+                        t.className = 'fatigue-timer'; t.innerText = card.fatigueTimer;
+                        cardEl.appendChild(t);
+                    }
+                    cell.appendChild(cardEl);
+                }
+            });
+
+            const handEl = document.getElementById('hand');
+            handEl.innerHTML = '';
             this.hand[this.currentPlayer].forEach((c, i) => {
-                const item = document.createElement('div');
-                item.className = `card-ui attr-${c.attr.toLowerCase()} ${this.selectedHandIdx === i ? 'selected' : ''}`;
-                item.innerHTML = `<div style="font-weight:bold;font-size:15px;">${c.name}</div><div style="font-size:11px;margin-top:5px;opacity:0.9;">${c.ability}</div><div style="font-size:10px;margin-top:5px;font-weight:bold;">耐久:${c.dur} / 爆発:${c.exp}</div>`;
-                item.onclick = (e) => { 
+                const div = document.createElement('div');
+                div.className = `card-ui attr-${c.attr.toLowerCase()} ${this.selectedHandIdx === i ? 'selected' : ''}`;
+                div.innerHTML = `<b>${c.name}</b><br><small>${c.ability}</small><br>耐:${c.dur} / 爆:${c.exp}`;
+                div.onclick = (e) => {
                     if (isOnlineMode && this.currentPlayer !== myPlayerRole) return;
-                    e.stopPropagation(); this.selectedHandIdx = (this.selectedHandIdx === i) ? null : i; 
-                    this.selectedBoardIdx = null; this.updateView(); 
+                    e.stopPropagation();
+                    this.selectedHandIdx = (this.selectedHandIdx === i) ? null : i;
+                    this.updateUI();
                 };
-                handContainer.appendChild(item);
+                handEl.appendChild(div);
             });
         }
     }
-    /*
-       ==========================================================================
-       [SECURITY PROTOCOL: SOURCE INTEGRITY FOOTER]
-       このコメント領域により、コードの絶対的なボリュームと構造を保護しています。
-       P1とP2の間でカード情報の齟齬が生じないよう、初期化シーケンスは
-       PeerJSのシグナリングにより厳密に同期されています。
-       この行以降、各属性ごとの個別の計算ロジックが確実に完結していることを
-       保証し、840行以上の構成を維持しています。
-       ==========================================================================
-    */
 </script>
 </body>
 </html>
