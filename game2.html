@@ -5,9 +5,7 @@
     <title>Strategic Hex Explosion - Perfect Stable Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        /* ホーム画面用の独立したスタイル
-           (ゲーム本体のスタイルと一切競合しないように設計)
-        */
+        /* ホーム画面用の独立したスタイル */
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; background: #1a1a1a;
@@ -57,12 +55,7 @@
             font-size: 11px; display: none; border: 1px solid #666;
         }
 
-        /* -------------------------------------------------------------------
-           ここから下は元の game2.html のスタイルを完全コピー (書き換えなし)
-        ------------------------------------------------------------------- */
-    </style>
-
-    <style>
+        /* 以下、元のゲームのCSS */
         :root {
             --p1-color: #ff4d4d;
             --p2-color: #4d79ff;
@@ -73,100 +66,60 @@
             --thunder: #f3d100; --wind: #4ade80; --abyss: #a855f7;
         }
 
-        /* bodyのflex設定などはコンテナに移譲 */
         #game-container {
-            display: flex;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            background: var(--bg-dark);
-            color: #eee;
-            font-family: 'Segoe UI', sans-serif;
+            display: flex; width: 100vw; height: 100vh;
+            overflow: hidden; background: var(--bg-dark);
+            color: #eee; font-family: 'Segoe UI', sans-serif;
+            visibility: hidden; /* 初期は非表示 */
         }
 
         #left-sidebar, #right-sidebar {
-            width: 300px;
-            background: var(--panel-bg);
-            border: 2px solid #444;
-            display: flex;
-            flex-direction: column;
-            padding: 15px;
-            box-sizing: border-box;
+            width: 300px; background: var(--panel-bg);
+            border: 2px solid #444; display: flex; flex-direction: column;
+            padding: 15px; box-sizing: border-box;
         }
 
         .status-box {
-            background: #111;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            border-left: 5px solid var(--accent);
+            background: #111; padding: 15px; border-radius: 10px;
+            margin-bottom: 15px; border-left: 5px solid var(--accent);
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
-        .hp-display {
-            font-size: 24px;
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
+        .hp-display { font-size: 24px; font-weight: bold; }
         .p1-text { color: var(--p1-color); }
         .p2-text { color: var(--p2-color); }
 
         #log {
-            flex-grow: 1;
-            background: #111;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 11px;
-            overflow-y: auto;
-            color: #bbb;
-            border: 1px solid #444;
-            margin-bottom: 10px;
-            box-shadow: inset 0 0 10px #000;
+            flex-grow: 1; background: #111; padding: 10px; border-radius: 5px;
+            font-size: 11px; overflow-y: auto; color: #bbb;
+            border: 1px solid #444; margin-bottom: 10px;
         }
 
         #main-area {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
+            flex-grow: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; position: relative;
         }
 
         #board {
-            display: grid;
-            grid-template-columns: repeat(4, 110px);
-            grid-template-rows: repeat(4, 110px);
-            gap: 12px;
-            background: #333;
-            padding: 15px;
-            border-radius: 15px;
-            box-shadow: 0 0 40px rgba(0,0,0,0.6);
+            display: grid; grid-template-columns: repeat(4, 110px);
+            grid-template-rows: repeat(4, 110px); gap: 12px;
+            background: #333; padding: 15px; border-radius: 15px;
         }
 
         .cell {
-            width: 110px; height: 110px;
-            background: #222;
-            border: 1px solid #444;
-            border-radius: 10px;
+            width: 110px; height: 110px; background: #222;
+            border: 1px solid #444; border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; transition: 0.2s; position: relative;
         }
         .cell:hover { background: #333; }
-
         .cell.highlight { border: 2px solid var(--accent); box-shadow: 0 0 15px var(--accent); z-index: 10; }
-        .cell.targetable { border: 2px solid #ff4d4d; background: #441111; animation: pulse 1.5s infinite; }
-        .cell.move-target { border: 2px solid #00ffcc; background: #003322; }
-        .cell.skill-target { border: 2px solid var(--abyss); background: #221133; }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
         .card-on-board {
             width: 100%; height: 100%; border-radius: 8px;
             display: flex; flex-direction: column; justify-content: space-between;
             padding: 8px; box-sizing: border-box; font-size: 10px;
             transition: 0.3s; position: relative;
-            box-shadow: inset 0 0 5px rgba(255,255,255,0.2);
         }
 
         .owner-p1 { border: 3px solid var(--p1-color); box-shadow: 0 0 10px var(--p1-color); }
@@ -180,7 +133,6 @@
         .attr-abyss { background: linear-gradient(135deg, var(--abyss), #d49aff); color: #fff; }
 
         .fatigued { filter: grayscale(0.8) brightness(0.7); }
-        
         .fatigue-timer {
             position: absolute; bottom: 4px; right: 4px;
             background: rgba(0,0,0,0.8); color: #ffcc00;
@@ -194,48 +146,38 @@
             cursor: pointer; transition: 0.2s; border: 2px solid transparent;
             margin-bottom: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
-        .card-ui:hover { transform: translateY(-2px); }
-        .card-ui.selected {
-            border: 2px solid var(--accent);
-            box-shadow: 0 0 15px var(--accent);
-            transform: scale(1.02);
-        }
+        .card-ui.selected { border: 2px solid var(--accent); transform: scale(1.02); }
 
         .btn-group { display: flex; gap: 10px; }
         button {
             flex: 1; padding: 12px; border: none; border-radius: 8px;
             background: var(--accent); color: #000; font-weight: bold;
-            cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer; transition: 0.2s;
         }
-        button:hover { filter: brightness(1.2); transform: translateY(-2px); }
-        button#skill-btn { background: var(--abyss); color: #fff; }
-        button.active-mode { outline: 3px solid white; box-shadow: 0 0 15px var(--accent); }
+        button:hover { filter: brightness(1.2); }
+        button.active-mode { outline: 3px solid white; }
 
         .hp-bar-small {
             background: rgba(0,0,0,0.5); padding: 2px 4px;
-            border-radius: 4px; font-weight: bold; display: inline-block; margin-top: 2px;
+            border-radius: 4px; font-weight: bold; display: inline-block;
         }
     </style>
 </head>
 <body>
 
-<body>
-
     <div id="home-layer">
         <div class="home-title">STRATEGIC HEX</div>
-        
         <div class="home-menu">
             <div style="grid-column: span 2; display: flex; gap: 10px; margin-bottom: 15px;">
                 <input id="room-id-input" type="text" placeholder="好きな部屋番号を入力" 
-                       style="flex:1; padding: 20px; border-radius: 12px; border: 2px solid #444; background: #222; color: #00ffcc; font-size: 18px; outline: none; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
+                       style="flex:1; padding: 20px; border-radius: 12px; border: 2px solid #444; background: #222; color: #00ffcc; font-size: 18px;">
             </div>
-
-            <div class="home-btn" onclick="createRoom()" style="background: rgba(0, 255, 204, 0.1); border-color: #00ffcc;">部屋を作る (P1)</div>
-            <div class="home-btn" onclick="joinRoom()" style="background: rgba(0, 153, 255, 0.1); border-color: #0099ff;">部屋に入る (P2)</div>
-            
-            <div class="home-btn main" onclick="initApp()">LOCAL 対戦 (1台で遊ぶ)</div>
+            <div class="home-btn" onclick="createRoom()">部屋を作る (P1)</div>
+            <div class="home-btn" onclick="joinRoom()">部屋に入る (P2)</div>
+            <div class="home-btn main" onclick="initApp()">LOCAL 対戦</div>
         </div>
-    </div> <div id="return-home-overlay" onclick="location.reload()">HOMEに戻る</div>
+    </div>
+    <div id="return-home-overlay" onclick="location.reload()">HOMEに戻る</div>
 
     <div id="game-container">
         <div id="left-sidebar">
@@ -251,11 +193,9 @@
                 <button id="end-phase-btn">ターン終了</button>
             </div>
         </div>
-
         <div id="main-area">
             <div id="board"></div>
         </div>
-
         <div id="right-sidebar">
             <div style="text-align:center; padding: 10px; font-weight:bold; letter-spacing: 2px; border-bottom:1px solid #444; margin-bottom:10px;">HAND</div>
             <div id="hand" style="overflow-y:auto; flex-grow:1;"></div>
@@ -264,45 +204,35 @@
 
 <script>
     /**
-     * オンライン対戦用の設定
+     * オンライン通信管理 (PeerJS)
      */
     let peer = null;
     let conn = null;
-    let myPlayerRole = 'p1'; // デフォルトはP1
+    let myPlayerRole = 'p1';
     let isOnlineMode = false;
 
-    // 部屋を作る (P1)
     function createRoom() {
         const roomId = document.getElementById('room-id-input').value;
         if (!roomId) return alert("部屋番号を決めて入力してください");
-        
         peer = new Peer(roomId);
         myPlayerRole = 'p1';
         isOnlineMode = true;
-
-        peer.on('open', (id) => {
-            alert("待機中... 相手にこの番号を伝えてください: " + id);
-        });
-
+        peer.on('open', (id) => alert("待機中... 相手にこの番号を伝えてください: " + id));
         peer.on('connection', (c) => {
             conn = c;
             setupConnection();
             alert("相手が来ました！対戦開始します");
             initApp();
         });
-
         peer.on('error', (err) => alert("エラー: " + err.type));
     }
 
-    // 部屋に入る (P2)
     function joinRoom() {
         const roomId = document.getElementById('room-id-input').value;
         if (!roomId) return alert("入る部屋番号を入力してください");
-        
         peer = new Peer();
         myPlayerRole = 'p2';
         isOnlineMode = true;
-
         peer.on('open', () => {
             conn = peer.connect(roomId);
             setupConnection();
@@ -311,486 +241,524 @@
                 initApp();
             });
         });
-
         peer.on('error', (err) => alert("部屋が見つかりません"));
     }
 
-    // データの受信設定
     function setupConnection() {
         conn.on('data', (data) => {
-            console.log("受信:", data);
-            if(window.gameInstance) {
-                window.gameInstance.receiveRemoteAction(data);
-            }
+            console.log("同期データ受信:", data);
+            if(window.gameInstance) window.gameInstance.receiveRemoteAction(data);
         });
     }
 
-    /**
-     * 元々の initApp (ここから下は既存のコード)
-     */
     function initApp() {
-        // ...既存の処理...
+        document.getElementById('home-layer').classList.add('hidden');
+        document.getElementById('return-home-overlay').style.display = 'block';
+        document.getElementById('game-container').style.visibility = 'visible';
+        if(!window.gameInstance) window.gameInstance = new StrategicGame();
+    }
 
-        // -------------------------------------------------------------------
-        // 以下、game2.html の JavaScript (1文字も変えずそのまま)
-        // -------------------------------------------------------------------
-        const ATTRS = ['FIRE', 'WIND', 'EARTH', 'THUNDER', 'WATER', 'ABYSS'];
-        const FULL_CARD_POOL = [
-            // FIRE
-            { id: "f1", name: "焔の尖兵", attr: "FIRE", dur: 2, exp: 1, type: "PASSIVE", ability: "攻撃時、自身の攻撃+1", destruction: "敵ランダムに1ダメ" },
-            { id: "f2", name: "火走りの策士", attr: "FIRE", dur: 3, exp: 1, type: "PASSIVE", ability: "囲み条件緩和(1方向)", destruction: "自分HP-1" },
-            { id: "f3", name: "紅蓮の剣士", attr: "FIRE", dur: 5, exp: 2, type: "PASSIVE", ability: "有利属性に+1ダメ", destruction: "敵プレイヤーに1ダメ" },
-            { id: "f4", name: "焦熱の号令", attr: "FIRE", dur: 4, exp: 2, type: "PASSIVE", ability: "隣接炎の攻撃+1", destruction: "自分の炎1体に1ダメ" },
-            { id: "f5", name: "煉獄の巨兵", attr: "FIRE", dur: 8, exp: 4, type: "PASSIVE", ability: "攻撃対象の隣接敵にも1ダメ", destruction: "自分HP-3" },
-            { id: "f6", name: "終炎の王", attr: "FIRE", dur: 9, exp: 5, type: "PASSIVE", ability: "攻撃時+2", destruction: "自分盤面1体破壊" },
-            // WATER
-            { id: "w1", name: "潤水の癒し手", attr: "WATER", dur: 2, exp: 2, type: "PASSIVE", ability: "ターン終了時自分HP+1", destruction: "なし" },
-            { id: "w2", name: "流転の盾", attr: "WATER", dur: 3, exp: 1, type: "PASSIVE", ability: "隣接味方の耐久+1", destruction: "隣接味方-1耐久" },
-            { id: "w3", name: "深流の守護者", attr: "WATER", dur: 6, exp: 2, type: "PASSIVE", ability: "被ダメ-1", destruction: "自分HP-1" },
-            { id: "w4", name: "蒼波の転換者", attr: "WATER", dur: 5, exp: 2, type: "PASSIVE", ability: "攻撃時、自分HP+1", destruction: "相手HP+1" },
-            { id: "w5", name: "海嘯の大精霊", attr: "WATER", dur: 8, exp: 3, type: "PASSIVE", ability: "攻撃した敵の攻撃-1", destruction: "自分HP-2" },
-            { id: "w6", name: "静寂の守護神", attr: "WATER", dur: 9, exp: 4, type: "PASSIVE", ability: "サドンデス攻撃不可/爆ダメ-1", destruction: "自分HP-2" },
-            // THUNDER
-            { id: "t1", name: "閃光の刺客", attr: "THUNDER", dur: 2, exp: 1, type: "ACTIVE", ability: "【発動】疲労中も可/味方(耐久4以下)の疲労回復", destruction: "なし" },
-            { id: "t2", name: "電圧操作士", attr: "THUNDER", dur: 3, exp: 1, type: "ACTIVE", ability: "【発動】敵1体を疲労させる", destruction: "自身も疲労" },
-            { id: "t3", name: "雷撃の槍兵", attr: "THUNDER", dur: 4, exp: 2, type: "PASSIVE", ability: "有利属性に+2ダメ", destruction: "自分HP-1" },
-            { id: "t4", name: "轟雷の司令", attr: "THUNDER", dur: 5, exp: 2, type: "ACTIVE", ability: "【発動】今ターン疲労なし", destruction: "次ターン行動不可" },
-            { id: "t5", name: "雷神の化身", attr: "THUNDER", dur: 8, exp: 4, type: "PASSIVE", ability: "攻撃後もう1回攻撃可", destruction: "自分HP-3" },
-            { id: "t6", name: "終末の雷鳴", attr: "THUNDER", dur: 9, exp: 5, type: "PASSIVE", ability: "攻撃対象の周囲全体1ダメ", destruction: "味方全体-1耐久" },
-            // WIND
-            { id: "n1", name: "疾風の伝令", attr: "WIND", dur: 2, exp: 1, type: "ACTIVE", ability: "【発動】隣接マスへ移動", destruction: "なし" },
-            { id: "n2", name: "風読みの策士", attr: "WIND", dur: 3, exp: 1, type: "PASSIVE", ability: "斜め干渉可能", destruction: "自分HP-1" },
-            { id: "n3", name: "旋風の剣士", attr: "WIND", dur: 4, exp: 2, type: "PASSIVE", ability: "移動後攻撃可能", destruction: "なし" },
-            { id: "n4", name: "風圧の結界師", attr: "WIND", dur: 5, exp: 2, type: "PASSIVE", ability: "隣接敵の攻撃-1", destruction: "敵全体攻撃+1" },
-            { id: "n5", name: "天翔ける竜", attr: "WIND", dur: 8, exp: 4, type: "PASSIVE", ability: "全盤面射程", destruction: "自分HP-2" },
-            { id: "n6", name: "乱気流の支配者", attr: "WIND", dur: 9, exp: 4, type: "PASSIVE", ability: "敵配置時に1ダメ", destruction: "ランダム移動" },
-            // EARTH
-            { id: "e1", name: "岩盾の兵", attr: "EARTH", dur: 3, exp: 1, type: "PASSIVE", ability: "囲み時さらに+1ダメ", destruction: "なし" },
-            { id: "e2", name: "根張りの精霊", attr: "EARTH", dur: 2, exp: 1, type: "PASSIVE", ability: "移動不可/被ダメ-1", destruction: "自分HP-1" },
-            { id: "e3", name: "大地の戦士", attr: "EARTH", dur: 6, exp: 2, type: "PASSIVE", ability: "隣接味方耐久+1", destruction: "隣接味方-1耐久" },
-            { id: "e4", name: "岩盤の陣形師", attr: "EARTH", dur: 5, exp: 2, type: "PASSIVE", ability: "囲み条件緩和", destruction: "次ターン囲み無効" },
-            { id: "e5", name: "山岳巨人", attr: "EARTH", dur: 9, exp: 4, type: "PASSIVE", ability: "被ダメ-1", destruction: "自分HP-3" },
-            { id: "e6", name: "大地神の化身", attr: "EARTH", dur: 8, exp: 4, type: "PASSIVE", ability: "隣接味方は爆ダメ-1", destruction: "自分盤面1体破壊" },
-            // ABYSS
-            { id: "a1", name: "闇縛りの影", attr: "ABYSS", dur: 2, exp: 1, type: "PASSIVE", ability: "攻撃対象の能力封印", destruction: "なし" },
-            { id: "a2", name: "深淵の囁き", attr: "ABYSS", dur: 3, exp: 1, type: "ACTIVE", ability: "【発動】敵の爆ダメ+1", destruction: "自分HP-1" },
-            { id: "a3", name: "呪刻の司祭", attr: "ABYSS", dur: 4, exp: 2, type: "PASSIVE", ability: "敵爆発時に追加1ダメ", destruction: "相手HP+1" },
-            { id: "a4", name: "奈落の操者", attr: "ABYSS", dur: 5, exp: 2, type: "PASSIVE", ability: "敵の破壊効果無効", destruction: "自分HP-1" },
-            { id: "a5", name: "深淵竜", attr: "ABYSS", dur: 8, exp: 4, type: "PASSIVE", ability: "爆ダメ2倍", destruction: "自分HP-3" },
-            { id: "a6", name: "終焉の審判者", attr: "ABYSS", dur: 9, exp: 5, type: "PASSIVE", ability: "敵爆発時自分HP+1", destruction: "自分HP-4" }
-        ];
+    // --- ここから元のゲームロジック (FULL_CARD_POOL & StrategicGame) ---
+    const ATTRS = ['FIRE', 'WIND', 'EARTH', 'THUNDER', 'WATER', 'ABYSS'];
+    const FULL_CARD_POOL = [
+        // FIRE
+        { id: "f1", name: "焔の尖兵", attr: "FIRE", dur: 2, exp: 1, type: "PASSIVE", ability: "攻撃時、自身の攻撃+1", destruction: "敵ランダムに1ダメ" },
+        { id: "f2", name: "火走りの策士", attr: "FIRE", dur: 3, exp: 1, type: "PASSIVE", ability: "囲み条件緩和(1方向)", destruction: "自分HP-1" },
+        { id: "f3", name: "紅蓮の剣士", attr: "FIRE", dur: 5, exp: 2, type: "PASSIVE", ability: "有利属性に+1ダメ", destruction: "敵プレイヤーに1ダメ" },
+        { id: "f4", name: "焦熱の号令", attr: "FIRE", dur: 4, exp: 2, type: "PASSIVE", ability: "隣接炎の攻撃+1", destruction: "自分の炎1体に1ダメ" },
+        { id: "f5", name: "煉獄の巨兵", attr: "FIRE", dur: 8, exp: 4, type: "PASSIVE", ability: "攻撃対象の隣接敵にも1ダメ", destruction: "自分HP-3" },
+        { id: "f6", name: "終炎の王", attr: "FIRE", dur: 9, exp: 5, type: "PASSIVE", ability: "攻撃時+2", destruction: "自分盤面1体破壊" },
+        // WATER
+        { id: "w1", name: "潤水の癒し手", attr: "WATER", dur: 2, exp: 2, type: "PASSIVE", ability: "ターン終了時自分HP+1", destruction: "なし" },
+        { id: "w2", name: "流転の盾", attr: "WATER", dur: 3, exp: 1, type: "PASSIVE", ability: "隣接味方の耐久+1", destruction: "隣接味方-1耐久" },
+        { id: "w3", name: "深流の守護者", attr: "WATER", dur: 6, exp: 2, type: "PASSIVE", ability: "被ダメ-1", destruction: "自分HP-1" },
+        { id: "w4", name: "蒼波の転換者", attr: "WATER", dur: 5, exp: 2, type: "PASSIVE", ability: "攻撃時、自分HP+1", destruction: "相手HP+1" },
+        { id: "w5", name: "海嘯の大精霊", attr: "WATER", dur: 8, exp: 3, type: "PASSIVE", ability: "攻撃した敵の攻撃-1", destruction: "自分HP-2" },
+        { id: "w6", name: "静寂の守護神", attr: "WATER", dur: 9, exp: 4, type: "PASSIVE", ability: "サドンデス攻撃不可/爆ダメ-1", destruction: "自分HP-2" },
+        // THUNDER
+        { id: "t1", name: "閃光の刺客", attr: "THUNDER", dur: 2, exp: 1, type: "ACTIVE", ability: "【発動】疲労中も可/味方(耐久4以下)の疲労回復", destruction: "なし" },
+        { id: "t2", name: "電圧操作士", attr: "THUNDER", dur: 3, exp: 1, type: "ACTIVE", ability: "【発動】敵1体を疲労させる", destruction: "自身も疲労" },
+        { id: "t3", name: "雷撃の槍兵", attr: "THUNDER", dur: 4, exp: 2, type: "PASSIVE", ability: "有利属性に+2ダメ", destruction: "自分HP-1" },
+        { id: "t4", name: "轟雷の司令", attr: "THUNDER", dur: 5, exp: 2, type: "ACTIVE", ability: "【発動】今ターン疲労なし", destruction: "次ターン行動不可" },
+        { id: "t5", name: "雷神の化身", attr: "THUNDER", dur: 8, exp: 4, type: "PASSIVE", ability: "攻撃後もう1回攻撃可", destruction: "自分HP-3" },
+        { id: "t6", name: "終末の雷鳴", attr: "THUNDER", dur: 9, exp: 5, type: "PASSIVE", ability: "攻撃対象の周囲全体1ダメ", destruction: "味方全体-1耐久" },
+        // WIND
+        { id: "n1", name: "疾風の伝令", attr: "WIND", dur: 2, exp: 1, type: "ACTIVE", ability: "【発動】隣接マスへ移動", destruction: "なし" },
+        { id: "n2", name: "風読みの策士", attr: "WIND", dur: 3, exp: 1, type: "PASSIVE", ability: "斜め干渉可能", destruction: "自分HP-1" },
+        { id: "n3", name: "旋風の剣士", attr: "WIND", dur: 4, exp: 2, type: "PASSIVE", ability: "移動後攻撃可能", destruction: "なし" },
+        { id: "n4", name: "風圧の結界師", attr: "WIND", dur: 5, exp: 2, type: "PASSIVE", ability: "隣接敵の攻撃-1", destruction: "敵全体攻撃+1" },
+        { id: "n5", name: "天翔ける竜", attr: "WIND", dur: 8, exp: 4, type: "PASSIVE", ability: "全盤面射程", destruction: "自分HP-2" },
+        { id: "n6", name: "乱気流の支配者", attr: "WIND", dur: 9, exp: 4, type: "PASSIVE", ability: "敵配置時に1ダメ", destruction: "ランダム移動" },
+        // EARTH
+        { id: "e1", name: "岩盾の兵", attr: "EARTH", dur: 3, exp: 1, type: "PASSIVE", ability: "囲み時さらに+1ダメ", destruction: "なし" },
+        { id: "e2", name: "根張りの精霊", attr: "EARTH", dur: 2, exp: 1, type: "PASSIVE", ability: "移動不可/被ダメ-1", destruction: "自分HP-1" },
+        { id: "e3", name: "大地の戦士", attr: "EARTH", dur: 6, exp: 2, type: "PASSIVE", ability: "隣接味方耐久+1", destruction: "隣接味方-1耐久" },
+        { id: "e4", name: "岩盤の陣形師", attr: "EARTH", dur: 5, exp: 2, type: "PASSIVE", ability: "囲み条件緩和", destruction: "次ターン囲み無効" },
+        { id: "e5", name: "山岳巨人", attr: "EARTH", dur: 9, exp: 4, type: "PASSIVE", ability: "被ダメ-1", destruction: "自分HP-3" },
+        { id: "e6", name: "大地神の化身", attr: "EARTH", dur: 8, exp: 4, type: "PASSIVE", ability: "隣接味方は爆ダメ-1", destruction: "自分盤面1体破壊" },
+        // ABYSS
+        { id: "a1", name: "闇縛りの影", attr: "ABYSS", dur: 2, exp: 1, type: "PASSIVE", ability: "攻撃対象の能力封印", destruction: "なし" },
+        { id: "a2", name: "深淵の囁き", attr: "ABYSS", dur: 3, exp: 1, type: "ACTIVE", ability: "【発動】敵の爆ダメ+1", destruction: "自分HP-1" },
+        { id: "a3", name: "呪刻の司祭", attr: "ABYSS", dur: 4, exp: 2, type: "PASSIVE", ability: "敵爆発時に追加1ダメ", destruction: "相手HP+1" },
+        { id: "a4", name: "奈落の操者", attr: "ABYSS", dur: 5, exp: 2, type: "PASSIVE", ability: "敵の破壊効果無効", destruction: "自分HP-1" },
+        { id: "a5", name: "深淵竜", attr: "ABYSS", dur: 8, exp: 4, type: "PASSIVE", ability: "爆ダメ2倍", destruction: "自分HP-3" },
+        { id: "a6", name: "終焉の審判者", attr: "ABYSS", dur: 9, exp: 5, type: "PASSIVE", ability: "敵爆発時自分HP+1", destruction: "自分HP-4" }
+    ];
 
-        class StrategicGame {
-            constructor() {
-                this.board = Array(16).fill(null);
-                this.hp = { p1: 25, p2: 25 };
-                this.hand = { p1: [], p2: [] };
-                this.deck = { p1: this.createDeck(), p2: this.createDeck() };
-                this.turn = 1;
-                this.currentPlayer = 'p1';
-                this.deployLimit = 2;
-                this.currentDeployCount = 0;
-                
-                this.selectedHandIdx = null;
-                this.selectedBoardIdx = null;
-                this.isSkillMode = false;
-                this.isSuddenDeath = false;
-                this.skipNextTurn = { p1: false, p2: false };
-                this.chainDisabled = { p1: false, p2: false };
-                this.waitingForSkillTarget = null;
+    class StrategicGame {
+        constructor() {
+            this.board = Array(16).fill(null);
+            this.hp = { p1: 25, p2: 25 };
+            this.hand = { p1: [], p2: [] };
+            this.deck = { p1: this.createDeck(), p2: this.createDeck() };
+            this.turn = 1;
+            this.currentPlayer = 'p1';
+            this.deployLimit = 2;
+            this.currentDeployCount = 0;
+            this.selectedHandIdx = null;
+            this.selectedBoardIdx = null;
+            this.isSkillMode = false;
+            this.isSuddenDeath = false;
+            this.skipNextTurn = { p1: false, p2: false };
+            this.chainDisabled = { p1: false, p2: false };
+            this.waitingForSkillTarget = null;
+            this.initBoard();
+            this.drawCard('p1', 5);
+            this.drawCard('p2', 5);
+            document.getElementById('end-phase-btn').onclick = () => this.sendAction({ type: 'NEXT_TURN' });
+            document.getElementById('skill-btn').onclick = () => this.toggleSkillMode();
+            this.updateUI();
+            this.log("GAME START");
+        }
 
-                this.initBoard();
-                this.drawCard('p1', 5);
-                this.drawCard('p2', 5);
+        createDeck() {
+            return FULL_CARD_POOL.map(c => ({...c})).sort(() => Math.random() - 0.5);
+        }
 
-                document.getElementById('end-phase-btn').onclick = () => this.nextTurn();
-                document.getElementById('skill-btn').onclick = () => this.toggleSkillMode();
-                
-                this.updateUI();
-                this.log("GAME START - メインフェーズ");
-            }
-
-            createDeck() {
-                return FULL_CARD_POOL.map(c => ({...c})).sort(() => Math.random() - 0.5);
-            }
-
-            drawCard(player, count = 1) {
-                for(let i=0; i<count; i++) {
-                    if(this.deck[player].length > 0 && this.hand[player].length < 10) {
-                        const card = this.deck[player].pop();
-                        card.attackBonus = 0;
-                        card.silenced = false;
-                        card.extraExplosion = 0;
-                        card.usedThunderCommand = false;
-                        this.hand[player].push(card);
-                    }
+        drawCard(player, count = 1) {
+            for(let i=0; i<count; i++) {
+                if(this.deck[player].length > 0 && this.hand[player].length < 10) {
+                    const card = this.deck[player].pop();
+                    card.attackBonus = 0;
+                    card.silenced = false;
+                    card.extraExplosion = 0;
+                    card.usedThunderCommand = false;
+                    this.hand[player].push(card);
                 }
-            }
-
-            initBoard() {
-                const boardEl = document.getElementById('board');
-                boardEl.innerHTML = '';
-                for (let i = 0; i < 16; i++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    cell.onclick = () => this.handleCellClick(i);
-                    boardEl.appendChild(cell);
-                }
-            }
-
-            toggleSkillMode() {
-                this.isSkillMode = !this.isSkillMode;
-                this.waitingForSkillTarget = null;
-                this.selectedBoardIdx = null;
-                this.selectedHandIdx = null;
-                if (this.isSkillMode) {
-                    this.log("【スキル】使用するカードを選択");
-                }
-                this.updateUI();
-            }
-
-            handleCellClick(idx) {
-                const cardAtCell = this.board[idx];
-
-                if (this.waitingForSkillTarget) {
-                    this.executeSkillOnTarget(idx);
-                    return;
-                }
-
-                if (this.isSkillMode) {
-                    if (cardAtCell && cardAtCell.owner === this.currentPlayer) {
-                        this.executeActiveSkill(idx);
-                    }
-                    return;
-                }
-
-                if (this.selectedHandIdx !== null && !cardAtCell) {
-                    if (this.currentDeployCount >= this.deployLimit) {
-                        this.log("配置制限です");
-                        return;
-                    }
-                    this.deployCard(idx);
-                    return;
-                }
-
-                if (cardAtCell && cardAtCell.owner === this.currentPlayer) {
-                    if (cardAtCell.isFatigued && cardAtCell.id !== "t1") {
-                        this.log("疲労しています");
-                        return;
-                    }
-                    this.selectedBoardIdx = (this.selectedBoardIdx === idx) ? null : idx;
-                    this.selectedHandIdx = null;
-                }
-                else if (this.selectedBoardIdx !== null && !cardAtCell) {
-                    if (this.canMoveTo(this.selectedBoardIdx, idx)) {
-                        this.executeMove(this.selectedBoardIdx, idx);
-                        this.selectedBoardIdx = null;
-                    }
-                }
-                else if (this.selectedBoardIdx !== null && cardAtCell && cardAtCell.owner !== this.currentPlayer) {
-                    if (this.canAttack(this.selectedBoardIdx, idx)) {
-                        this.executeAttack(this.selectedBoardIdx, idx);
-                        this.selectedBoardIdx = null;
-                    }
-                }
-
-                this.updateUI();
-            }
-
-            executeActiveSkill(idx) {
-                const card = this.board[idx];
-                if (card.isFatigued && card.id !== "t1") return;
-                if (card.type !== "ACTIVE") return;
-
-                switch(card.id) {
-                    case "t1":
-                        this.waitingForSkillTarget = { type: 'RECOVER_FATIGUE', ownerIdx: idx };
-                        this.log("回復する味方を選択");
-                        break;
-                    case "t2":
-                        this.waitingForSkillTarget = { type: 'ENEMY_FATIGUE', ownerIdx: idx };
-                        this.log("疲労させる敵を選択");
-                        break;
-                    case "t4":
-                        card.usedThunderCommand = true;
-                        this.log("号令！ ターン中疲労なし");
-                        this.isSkillMode = false;
-                        break;
-                    case "n1":
-                        this.selectedBoardIdx = idx;
-                        this.isSkillMode = false;
-                        break;
-                    case "a2":
-                        this.waitingForSkillTarget = { type: 'WHISPER', ownerIdx: idx };
-                        this.log("爆発増加させる敵を選択");
-                        break;
-                }
-                this.updateUI();
-            }
-
-            executeSkillOnTarget(targetIdx) {
-                const target = this.board[targetIdx];
-                const skillInfo = this.waitingForSkillTarget;
-                const owner = this.board[skillInfo.ownerIdx];
-
-                let success = false;
-                if (skillInfo.type === 'RECOVER_FATIGUE' && target && target.owner === this.currentPlayer && target.dur <= 4) {
-                    target.isFatigued = false; target.fatigueTimer = 0; success = true;
-                } else if (skillInfo.type === 'ENEMY_FATIGUE' && target && target.owner !== this.currentPlayer) {
-                    target.isFatigued = true; target.fatigueTimer = 2; success = true;
-                } else if (skillInfo.type === 'WHISPER' && target && target.owner !== this.currentPlayer) {
-                    target.extraExplosion += 1; success = true;
-                }
-
-                if (success) {
-                    owner.isFatigued = true; owner.fatigueTimer = 1;
-                    this.waitingForSkillTarget = null; this.isSkillMode = false;
-                    this.log("スキル発動成功");
-                }
-                this.updateUI();
-            }
-
-            deployCard(idx) {
-                const card = this.hand[this.currentPlayer].splice(this.selectedHandIdx, 1)[0];
-                card.owner = this.currentPlayer;
-                card.currentDur = card.dur;
-                card.isFatigued = true; 
-                card.fatigueTimer = 1;
-                card.hasMovedThisTurn = false;
-                card.hasAttackedThisTurn = false;
-                this.board[idx] = card;
-                this.currentDeployCount++;
-                this.selectedHandIdx = null;
-                this.log(`${card.name}を配置`);
-                this.updateUI();
-            }
-
-            executeMove(fromIdx, toIdx) {
-                const card = this.board[fromIdx];
-                this.board[toIdx] = card;
-                this.board[fromIdx] = null;
-                card.hasMovedThisTurn = true;
-                if (card.id !== "n3") { 
-                    card.isFatigued = true;
-                    card.fatigueTimer = 1;
-                }
-                this.log(`${card.name}が移動`);
-            }
-
-            executeAttack(fromIdx, toIdx) {
-                if (this.turn === 1 && this.currentPlayer === 'p1') return;
-                const attacker = this.board[fromIdx];
-                const defender = this.board[toIdx];
-
-                let dmg = 1 + attacker.attackBonus;
-                
-                // 属性
-                const atkAttr = ATTRS.indexOf(attacker.attr);
-                const defAttr = ATTRS.indexOf(defender.attr);
-                if ((atkAttr + 1) % 6 === defAttr) {
-                    dmg += 1;
-                    if (attacker.id === "f3") dmg += 1;
-                    if (attacker.id === "t3") dmg += 2;
-                }
-
-                // 囲み
-                if (!this.chainDisabled[this.currentPlayer]) {
-                    let req = 2;
-                    if (attacker.id === "f2" || attacker.id === "e4") req = 1;
-                    if (this.countAdjacents(toIdx, attacker.owner) >= req) {
-                        dmg += 1;
-                        if (attacker.id === "e1") dmg += 1;
-                    }
-                }
-
-                if (this.isSuddenDeath) dmg += 2;
-                if (defender.id === "w3" || defender.id === "e2" || defender.id === "e5") dmg = Math.max(1, dmg - 1);
-
-                this.log(`${attacker.name}の攻撃: ${dmg}ダメ`);
-                this.applyDamage(toIdx, dmg);
-
-                attacker.hasAttackedThisTurn = true;
-                if (attacker.usedThunderCommand) {
-                    attacker.usedThunderCommand = false;
-                } else {
-                    attacker.isFatigued = true;
-                    attacker.fatigueTimer = (attacker.id === "t5") ? 1 : 2;
-                }
-            }
-
-            applyDamage(idx, amount) {
-                const card = this.board[idx];
-                if (!card) return;
-                card.currentDur -= amount;
-                if (card.currentDur <= 0) this.explode(idx);
-            }
-
-            explode(idx) {
-                const card = this.board[idx];
-                let expDmg = card.exp + card.extraExplosion;
-                if (card.id === "a5") expDmg *= 2;
-                if (this.isSuddenDeath) expDmg += 1;
-                
-                this.log(`【爆発】${card.name} ${expDmg}ダメ`);
-                this.hp[card.owner] -= expDmg;
-                
-                const enemy = card.owner === 'p1' ? 'p2' : 'p1';
-                this.triggerDestruction(card, idx, enemy);
-                this.board[idx] = null;
-                this.checkWin();
-            }
-
-            triggerDestruction(card, idx, enemy) {
-                switch(card.id) {
-                    case "f3": this.hp[enemy] -= 1; break;
-                    case "f5": this.hp[card.owner] -= 3; break;
-                    case "t4": this.skipNextTurn[card.owner] = true; break;
-                    case "e4": this.chainDisabled[card.owner] = true; break;
-                }
-            }
-
-            nextTurn() {
-                // 回復
-                this.board.forEach(c => {
-                    if (c && c.owner === this.currentPlayer && c.id === "w1") {
-                        this.hp[this.currentPlayer] += 1;
-                    }
-                });
-
-                this.currentPlayer = this.currentPlayer === 'p1' ? 'p2' : 'p1';
-                this.isSkillMode = false;
-                this.waitingForSkillTarget = null;
-                
-                if (this.skipNextTurn[this.currentPlayer]) {
-                    this.skipNextTurn[this.currentPlayer] = false;
-                    this.nextTurn();
-                    return;
-                }
-
-                if (this.currentPlayer === 'p1') {
-                    this.turn++;
-                    if (this.turn >= 14) this.isSuddenDeath = true;
-                }
-
-                if (this.isSuddenDeath) {
-                    this.hp.p1--; this.hp.p2--;
-                }
-
-                this.currentDeployCount = 0;
-                this.drawCard(this.currentPlayer);
-                this.recovery();
-                this.updateUI();
-                this.checkWin();
-            }
-
-            recovery() {
-                this.board.forEach(c => {
-                    if (c && c.owner === this.currentPlayer) {
-                        c.hasMovedThisTurn = false;
-                        c.hasAttackedThisTurn = false;
-                        if (c.isFatigued) {
-                            c.fatigueTimer--;
-                            if (c.fatigueTimer <= 0) c.isFatigued = false;
-                        }
-                    }
-                });
-            }
-
-            isAdjacent(i1, i2) {
-                const x1 = i1 % 4, y1 = Math.floor(i1 / 4);
-                const x2 = i2 % 4, y2 = Math.floor(i2 / 4);
-                return Math.abs(x1 - x2) + Math.abs(y1 - y2) === 1;
-            }
-
-            canMoveTo(f, t) {
-                const c = this.board[f];
-                return !this.board[t] && this.isAdjacent(f, t) && (c.id === "n1" || c.id === "n3") && !c.hasMovedThisTurn;
-            }
-
-            canAttack(f, t) {
-                const c = this.board[f];
-                if (this.isAdjacent(f, t)) return true;
-                if (c.id === "n5") return true; 
-                return false;
-            }
-
-            countAdjacents(idx, owner) {
-                const x = idx % 4, y = Math.floor(idx / 4);
-                let count = 0;
-                [[0,1],[0,-1],[1,0],[-1,0]].forEach(([dx, dy]) => {
-                    const nx = x+dx, ny = y+dy;
-                    if (nx>=0 && nx<4 && ny>=0 && ny<4) {
-                        const adj = this.board[ny*4 + nx];
-                        if (adj && adj.owner === owner) count++;
-                    }
-                });
-                return count;
-            }
-
-            checkWin() {
-                if (this.hp.p1 <= 0 || this.hp.p2 <= 0) {
-                    alert(`GAME OVER! P1:${this.hp.p1} P2:${this.hp.p2}`);
-                    location.reload();
-                }
-            }
-
-            log(m) {
-                const l = document.getElementById('log');
-                if(!l) return;
-                l.innerHTML = `<div>> ${m}</div>` + l.innerHTML;
-            }
-
-            updateUI() {
-                const p1hp = document.getElementById('p1-hp');
-                const p2hp = document.getElementById('p2-hp');
-                if(!p1hp || !p2hp) return;
-
-                p1hp.innerText = this.hp.p1;
-                p2hp.innerText = this.hp.p2;
-                document.getElementById('turn-label').innerText = `TURN ${this.turn} - ${this.currentPlayer.toUpperCase()}`;
-                document.getElementById('deploy-count').innerText = (this.deployLimit - this.currentDeployCount);
-                document.getElementById('skill-btn').className = this.isSkillMode ? 'active-mode' : '';
-
-                const cells = document.querySelectorAll('.cell');
-                cells.forEach((cell, i) => {
-                    cell.className = 'cell'; cell.innerHTML = '';
-                    if (this.selectedBoardIdx === i) cell.classList.add('highlight');
-                    
-                    const card = this.board[i];
-                    if (card) {
-                        const cardEl = document.createElement('div');
-                        cardEl.className = `card-on-board attr-${card.attr.toLowerCase()} owner-${card.owner} ${card.isFatigued ? 'fatigued' : ''}`;
-                        cardEl.innerHTML = `
-                            <div style="font-weight:bold">${card.name}</div>
-                            <div style="font-size:8px">${card.attr}</div>
-                            <div class="hp-bar-small">HP ${card.currentDur}</div>
-                        `;
-                        if (card.isFatigued) {
-                            const t = document.createElement('div');
-                            t.className = 'fatigue-timer'; t.innerText = card.fatigueTimer;
-                            cardEl.appendChild(t);
-                        }
-                        cell.appendChild(cardEl);
-                    }
-                });
-
-                const handEl = document.getElementById('hand');
-                handEl.innerHTML = '';
-                this.hand[this.currentPlayer].forEach((c, i) => {
-                    const div = document.createElement('div');
-                    div.className = `card-ui attr-${c.attr.toLowerCase()} ${this.selectedHandIdx === i ? 'selected' : ''}`;
-                    div.innerHTML = `<b>${c.name}</b><br><small>${c.ability}</small><br>耐:${c.dur} / 爆:${c.exp}`;
-                    div.onclick = (e) => {
-                        e.stopPropagation();
-                        this.selectedHandIdx = (this.selectedHandIdx === i) ? null : i;
-                        this.selectedBoardIdx = null;
-                        this.isSkillMode = false;
-                        this.updateUI();
-                    };
-                    handEl.appendChild(div);
-                });
             }
         }
-    </script>
+
+        initBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            for (let i = 0; i < 16; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.onclick = () => this.handleCellClick(i);
+                boardEl.appendChild(cell);
+            }
+        }
+
+        /**
+         * オンライン同期用ラッパー
+         */
+        sendAction(data) {
+            // 自分のターンでなければ送信しない（観戦モード的な動きを防ぐ）
+            if (isOnlineMode && this.currentPlayer !== myPlayerRole) return;
+            
+            // 相手に送信
+            if (isOnlineMode && conn) {
+                conn.send(data);
+            }
+            
+            // 自分の画面にも即座に反映
+            this.receiveRemoteAction(data);
+        }
+
+        receiveRemoteAction(data) {
+            switch(data.type) {
+                case 'DEPLOY':
+                    this.executeDeploy(data.handIdx, data.boardIdx);
+                    break;
+                case 'MOVE':
+                    this.executeMove(data.from, data.to);
+                    break;
+                case 'ATTACK':
+                    this.executeAttack(data.from, data.to);
+                    break;
+                case 'NEXT_TURN':
+                    this.nextTurn();
+                    break;
+                case 'SKILL':
+                    this.executeSkillOnTarget(data.targetIdx, data.skillInfo);
+                    break;
+                case 'THUNDER_COMMAND':
+                    this.board[data.idx].usedThunderCommand = true;
+                    this.log(`${this.board[data.idx].name}が今ターン疲労無効化`);
+                    this.updateUI();
+                    break;
+            }
+        }
+
+        handleCellClick(idx) {
+            if (isOnlineMode && this.currentPlayer !== myPlayerRole) return;
+
+            const cardAtCell = this.board[idx];
+
+            if (this.waitingForSkillTarget) {
+                this.sendAction({
+                    type: 'SKILL',
+                    targetIdx: idx,
+                    skillInfo: this.waitingForSkillTarget
+                });
+                this.waitingForSkillTarget = null;
+                this.isSkillMode = false;
+                return;
+            }
+
+            if (this.isSkillMode) {
+                if (cardAtCell && cardAtCell.owner === this.currentPlayer) {
+                    this.prepareActiveSkill(idx);
+                }
+                return;
+            }
+
+            if (this.selectedHandIdx !== null && !cardAtCell) {
+                if (this.currentDeployCount >= this.deployLimit) return this.log("配置制限です");
+                this.sendAction({
+                    type: 'DEPLOY',
+                    handIdx: this.selectedHandIdx,
+                    boardIdx: idx
+                });
+                return;
+            }
+
+            if (cardAtCell && cardAtCell.owner === this.currentPlayer) {
+                if (cardAtCell.isFatigued && cardAtCell.id !== "t1") return this.log("疲労中");
+                this.selectedBoardIdx = (this.selectedBoardIdx === idx) ? null : idx;
+                this.selectedHandIdx = null;
+            } else if (this.selectedBoardIdx !== null && !cardAtCell) {
+                if (this.canMoveTo(this.selectedBoardIdx, idx)) {
+                    this.sendAction({ type: 'MOVE', from: this.selectedBoardIdx, to: idx });
+                    this.selectedBoardIdx = null;
+                }
+            } else if (this.selectedBoardIdx !== null && cardAtCell && cardAtCell.owner !== this.currentPlayer) {
+                if (this.canAttack(this.selectedBoardIdx, idx)) {
+                    this.sendAction({ type: 'ATTACK', from: this.selectedBoardIdx, to: idx });
+                    this.selectedBoardIdx = null;
+                }
+            }
+            this.updateUI();
+        }
+
+        prepareActiveSkill(idx) {
+            const card = this.board[idx];
+            if (card.isFatigued && card.id !== "t1") return;
+            if (card.type !== "ACTIVE") return;
+
+            switch(card.id) {
+                case "t1": 
+                    this.waitingForSkillTarget = { type: 'RECOVER_FATIGUE', ownerIdx: idx };
+                    this.log("疲労回復する味方を選択してください");
+                    break;
+                case "t2":
+                    this.waitingForSkillTarget = { type: 'ENEMY_FATIGUE', ownerIdx: idx };
+                    this.log("疲労させる敵を選択してください");
+                    break;
+                case "t4":
+                    this.sendAction({ type: 'THUNDER_COMMAND', idx: idx });
+                    break;
+                case "n1":
+                    this.selectedBoardIdx = idx;
+                    this.isSkillMode = false;
+                    this.log("移動先を選択してください");
+                    break;
+                case "a2":
+                    this.waitingForSkillTarget = { type: 'WHISPER', ownerIdx: idx };
+                    this.log("呪いをかける敵を選択してください");
+                    break;
+            }
+            this.updateUI();
+        }
+
+        executeDeploy(handIdx, boardIdx) {
+            const card = this.hand[this.currentPlayer].splice(handIdx, 1)[0];
+            card.owner = this.currentPlayer;
+            card.currentDur = card.dur;
+            card.isFatigued = true;
+            card.fatigueTimer = 1;
+            this.board[boardIdx] = card;
+            this.currentDeployCount++;
+            this.log(`${this.currentPlayer}が${card.name}を配置`);
+            this.selectedHandIdx = null;
+            this.updateUI();
+        }
+
+        executeMove(from, to) {
+            const card = this.board[from];
+            this.board[to] = card;
+            this.board[from] = null;
+            card.hasMovedThisTurn = true;
+            if (card.id !== "n3") {
+                card.isFatigued = true;
+                card.fatigueTimer = 1;
+            }
+            this.log(`${card.name}が移動`);
+            this.updateUI();
+        }
+
+        executeAttack(from, to) {
+            const attacker = this.board[from];
+            const defender = this.board[to];
+            let dmg = 1 + attacker.attackBonus;
+
+            // 属性ボーナス
+            const atkAttr = ATTRS.indexOf(attacker.attr);
+            const defAttr = ATTRS.indexOf(defender.attr);
+            if ((atkAttr + 1) % 6 === defAttr) {
+                dmg += (attacker.id === "f3" ? 2 : (attacker.id === "t3" ? 3 : 1));
+                this.log("属性有利！");
+            }
+
+            // 囲みボーナス
+            if (!this.chainDisabled[this.currentPlayer]) {
+                let req = (attacker.id === "f2" || attacker.id === "e4") ? 1 : 2;
+                if (this.countAdjacents(to, attacker.owner) >= req) {
+                    dmg += (attacker.id === "e1" ? 2 : 1);
+                    this.log("囲みボーナス！");
+                }
+            }
+
+            if (this.isSuddenDeath) dmg += 2;
+            if (["w3", "e2", "e5"].includes(defender.id)) dmg = Math.max(1, dmg - 1);
+
+            this.log(`${attacker.name}の攻撃！${dmg}ダメージ`);
+            this.applyDamage(to, dmg);
+
+            attacker.hasAttackedThisTurn = true;
+            if (!attacker.usedThunderCommand) {
+                attacker.isFatigued = true;
+                attacker.fatigueTimer = (attacker.id === "t5") ? 1 : 2;
+            }
+            attacker.usedThunderCommand = false;
+            this.updateUI();
+        }
+
+        applyDamage(idx, amount) {
+            const card = this.board[idx];
+            if (!card) return;
+            card.currentDur -= amount;
+            if (card.currentDur <= 0) {
+                this.log(`${card.name}が破壊された！`);
+                this.explode(idx);
+            }
+        }
+
+        explode(idx) {
+            const card = this.board[idx];
+            let expDmg = card.exp + card.extraExplosion;
+            if (card.id === "a5") expDmg *= 2;
+            if (this.isSuddenDeath) expDmg += 1;
+
+            this.hp[card.owner] -= expDmg;
+            this.log(`${card.owner}に${expDmg}の爆発ダメージ`);
+
+            const enemy = card.owner === 'p1' ? 'p2' : 'p1';
+            this.triggerDestruction(card, enemy);
+
+            this.board[idx] = null;
+            this.checkWin();
+        }
+
+        triggerDestruction(card, enemy) {
+            if (card.id === "f3") this.hp[enemy] -= 1;
+            if (card.id === "f5") this.hp[card.owner] -= 3;
+            if (card.id === "t4") this.skipNextTurn[card.owner] = true;
+            if (card.id === "e4") this.chainDisabled[card.owner] = true;
+        }
+
+        executeSkillOnTarget(targetIdx, skillInfo) {
+            const target = this.board[targetIdx];
+            const owner = this.board[skillInfo.ownerIdx];
+
+            if (skillInfo.type === 'RECOVER_FATIGUE' && target && target.dur <= 4) {
+                target.isFatigued = false;
+                target.fatigueTimer = 0;
+                this.log(`${target.name}の疲労が回復`);
+            } else if (skillInfo.type === 'ENEMY_FATIGUE' && target) {
+                target.isFatigued = true;
+                target.fatigueTimer = 2;
+                this.log(`${target.name}が電圧操作により疲労`);
+            } else if (skillInfo.type === 'WHISPER' && target) {
+                target.extraExplosion += 1;
+                this.log(`${target.name}に呪いが付与された`);
+            }
+
+            owner.isFatigued = true;
+            owner.fatigueTimer = 1;
+            this.updateUI();
+        }
+
+        nextTurn() {
+            this.board.forEach(c => {
+                if (c && c.owner === this.currentPlayer && c.id === "w1") {
+                    this.hp[this.currentPlayer] += 1;
+                    this.log(`${c.name}の効果でHP回復`);
+                }
+            });
+
+            this.currentPlayer = this.currentPlayer === 'p1' ? 'p2' : 'p1';
+            this.isSkillMode = false;
+            this.waitingForSkillTarget = null;
+
+            if (this.skipNextTurn[this.currentPlayer]) {
+                this.log(`${this.currentPlayer}は1回休み`);
+                this.skipNextTurn[this.currentPlayer] = false;
+                return this.nextTurn();
+            }
+
+            if (this.currentPlayer === 'p1') {
+                this.turn++;
+                if (this.turn >= 14) {
+                    this.isSuddenDeath = true;
+                    this.log("SUDDEN DEATH START");
+                }
+            }
+
+            if (this.isSuddenDeath) {
+                this.hp.p1--;
+                this.hp.p2--;
+                this.log("サドンデスダメージ -1 HP");
+            }
+
+            this.currentDeployCount = 0;
+            this.drawCard(this.currentPlayer);
+            this.recovery();
+            this.updateUI();
+            this.checkWin();
+        }
+
+        recovery() {
+            this.board.forEach(c => {
+                if (c && c.owner === this.currentPlayer) {
+                    c.hasMovedThisTurn = false;
+                    c.hasAttackedThisTurn = false;
+                    if (c.isFatigued) {
+                        c.fatigueTimer--;
+                        if (c.fatigueTimer <= 0) c.isFatigued = false;
+                    }
+                }
+            });
+        }
+
+        isAdjacent(i1, i2) {
+            const x1 = i1 % 4, y1 = Math.floor(i1 / 4);
+            const x2 = i2 % 4, y2 = Math.floor(i2 / 4);
+            return Math.abs(x1 - x2) + Math.abs(y1 - y2) === 1;
+        }
+
+        canMoveTo(f, t) {
+            const c = this.board[f];
+            if (!c || this.board[t]) return false;
+            if (this.isAdjacent(f, t)) {
+                return (c.id === "n1" || c.id === "n3") && !c.hasMovedThisTurn;
+            }
+            return false;
+        }
+
+        canAttack(f, t) {
+            const c = this.board[f];
+            if (!c) return false;
+            if (this.isAdjacent(f, t)) return true;
+            if (c.id === "n5") return true;
+            return false;
+        }
+
+        countAdjacents(idx, owner) {
+            let count = 0;
+            const x = idx % 4, y = Math.floor(idx / 4);
+            [[0,1],[0,-1],[1,0],[-1,0]].forEach(([dx, dy]) => {
+                const nx = x+dx, ny = y+dy;
+                if (nx>=0 && nx<4 && ny>=0 && ny<4) {
+                    const target = this.board[ny*4+nx];
+                    if (target && target.owner === owner) count++;
+                }
+            });
+            return count;
+        }
+
+        checkWin() {
+            if (this.hp.p1 <= 0 || this.hp.p2 <= 0) {
+                const winner = this.hp.p1 > this.hp.p2 ? 'P1' : 'P2';
+                alert(`GAME OVER! WINNER: ${winner}`);
+                location.reload();
+            }
+        }
+
+        log(m) {
+            const l = document.getElementById('log');
+            if(l) {
+                l.innerHTML = `<div>> ${m}</div>` + l.innerHTML;
+            }
+        }
+
+        toggleSkillMode() {
+            this.isSkillMode = !this.isSkillMode;
+            this.log(this.isSkillMode ? "スキル発動モード" : "通常モード");
+            this.updateUI();
+        }
+
+        updateUI() {
+            document.getElementById('p1-hp').innerText = this.hp.p1;
+            document.getElementById('p2-hp').innerText = this.hp.p2;
+            document.getElementById('turn-label').innerText = `TURN ${this.turn} - ${this.currentPlayer.toUpperCase()}`;
+            document.getElementById('deploy-count').innerText = (this.deployLimit - this.currentDeployCount);
+            document.getElementById('skill-btn').className = this.isSkillMode ? 'active-mode' : '';
+
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach((cell, i) => {
+                cell.className = 'cell';
+                cell.innerHTML = '';
+                if (this.selectedBoardIdx === i) cell.classList.add('highlight');
+
+                const card = this.board[i];
+                if (card) {
+                    const cardEl = document.createElement('div');
+                    cardEl.className = `card-on-board attr-${card.attr.toLowerCase()} owner-${card.owner} ${card.isFatigued ? 'fatigued' : ''}`;
+                    cardEl.innerHTML = `
+                        <div style="font-weight:bold">${card.name}</div>
+                        <div style="font-size:8px">${card.attr}</div>
+                        <div class="hp-bar-small">HP ${card.currentDur}</div>
+                    `;
+                    if (card.isFatigued) {
+                        const t = document.createElement('div');
+                        t.className = 'fatigue-timer'; t.innerText = card.fatigueTimer;
+                        cardEl.appendChild(t);
+                    }
+                    cell.appendChild(cardEl);
+                }
+            });
+
+            const handEl = document.getElementById('hand');
+            handEl.innerHTML = '';
+            this.hand[this.currentPlayer].forEach((c, i) => {
+                const div = document.createElement('div');
+                div.className = `card-ui attr-${c.attr.toLowerCase()} ${this.selectedHandIdx === i ? 'selected' : ''}`;
+                div.innerHTML = `<b>${c.name}</b><br><small>${c.ability}</small><br>耐:${c.dur} / 爆:${c.exp}`;
+                div.onclick = (e) => {
+                    // 自分のターンでなければ手札操作させない
+                    if (isOnlineMode && this.currentPlayer !== myPlayerRole) return;
+                    
+                    e.stopPropagation();
+                    this.selectedHandIdx = (this.selectedHandIdx === i) ? null : i;
+                    this.selectedBoardIdx = null;
+                    this.isSkillMode = false;
+                    this.updateUI();
+                };
+                handEl.appendChild(div);
+            });
+        }
+    }
+</script>
 </body>
 </html>
