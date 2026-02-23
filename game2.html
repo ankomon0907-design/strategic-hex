@@ -341,7 +341,7 @@
         { id: "f1", name: "焔の尖兵", attr: "FIRE", dur: 2, exp: 1, type: "PASSIVE", ability: "攻撃時、自身の攻撃+1", destruction: "敵ランダムに1ダメ" },
         { id: "f2", name: "火走りの策士", attr: "FIRE", dur: 3, exp: 1, type: "PASSIVE", ability: "囲み条件緩和(1方向)", destruction: "自分HP-1" },
         { id: "f3", name: "紅蓮の剣士", attr: "FIRE", dur: 5, exp: 2, type: "PASSIVE", ability: "有利属性に+1ダメ", destruction: "敵プレイヤーに1ダメ" },
-        { id: "f4", name: "焦熱 of 号令", attr: "FIRE", dur: 4, exp: 2, type: "PASSIVE", ability: "隣接炎の攻撃+1", destruction: "自分の炎1体に1ダメ" },
+        { id: "f4", name: "焦熱の号令", attr: "FIRE", dur: 4, exp: 2, type: "PASSIVE", ability: "隣接炎の攻撃+1", destruction: "自分の炎1体に1ダメ" },
         { id: "f5", name: "煉獄の巨兵", attr: "FIRE", dur: 8, exp: 4, type: "PASSIVE", ability: "攻撃対象の隣接敵にも1ダメ", destruction: "自分HP-3" },
         { id: "f6", name: "終炎の王", attr: "FIRE", dur: 9, exp: 5, type: "PASSIVE", ability: "攻撃時+2", destruction: "自分盤面1体破壊" },
         // WATER (防御・回復)
@@ -392,8 +392,7 @@
             this.hp = { p1: 25, p2: 25 };
             this.hand = { p1: [], p2: [] };
             
-            // 【重要】デッキの同期ロジック
-            // 引数 syncedDecks があればそれを使用し、なければ新規作成（ホスト用）
+            // デッキの初期化
             if (syncedDecks) {
                 this.deck = syncedDecks;
             } else {
@@ -428,8 +427,7 @@
         }
 
         createDeck() {
-            // シャッフルされたデッキを生成
-            return JSON.parse(JSON.stringify(FULL_CARD_POOL)).sort(() => Math.random() - 0.5);
+            return FULL_CARD_POOL.map(c => ({ ...c })).sort(() => Math.random() - 0.5);
         }
 
         drawCard(player, count = 1) {
