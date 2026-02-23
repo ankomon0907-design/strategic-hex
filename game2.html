@@ -221,7 +221,7 @@
 <script>
     /*
       ========================================
-      オンライン通信管理 (PeerJS - 高安定ハンドシェイク版)
+      オンライン通信管理 (PeerJS - デッキ同期・完全版)
       ========================================
     */
     let peer = null;
@@ -268,7 +268,6 @@
             
             conn.on('open', () => {
                 console.log("Connected to Host. Sending READY...");
-                // 接続が物理的に開いた直後に「準備完了」をホストへ送る
                 conn.send({ type: 'P2_READY' });
             });
         });
@@ -283,10 +282,12 @@
         conn.on('data', (data) => {
             console.log("Received Data:", data.type);
 
-            // ホスト側：P2の準備完了を受けてゲームを開始し、デッキを同期する
+            // ホスト側：P2の準備完了を受けて「自分が生成・シャッフルしたデッキ」をP2に送る
             if (data.type === 'P2_READY' && myPlayerRole === 'p1') {
-                initApp(); // 自分の画面を遷移
-                // 生成したデッキをP2に送り、P2も開始させる
+                // 先に自分のインスタンスを作る（ここでデッキがランダム生成される）
+                initApp(); 
+                
+                // 生成した「シャッフル済みの両者のデッキ」をP2に送る
                 conn.send({ 
                     type: 'SYNC_START', 
                     decks: window.gameInstance.deck 
@@ -294,7 +295,7 @@
                 return;
             }
 
-            // ゲスト側：ホストからの開始信号でUIを遷移
+            // ゲスト側：ホストからの開始信号（デッキデータ入り）で初期化
             if (data.type === 'SYNC_START') {
                 initApp(data.decks);
                 return;
@@ -318,12 +319,10 @@
         const game = document.getElementById('game-container');
         const overlay = document.getElementById('return-home-overlay');
 
-        // UIを強制的に切り替え
         home.classList.add('hidden');
         overlay.style.display = 'block';
         game.style.visibility = 'visible';
         
-        // インスタンスがなければ作成
         if(!window.gameInstance) {
             window.gameInstance = new StrategicGame(syncedDecks);
         }
@@ -331,48 +330,48 @@
 
     /*
       ========================================
-      カードデータ定義 (全36種 - 完全書き下ろし)
+      カードデータ定義 (全36種 - 完全記述)
       ========================================
     */
     const ATTRS = ['FIRE', 'WIND', 'EARTH', 'THUNDER', 'WATER', 'ABYSS'];
     
     const FULL_CARD_POOL = [
-        // FIRE (攻撃特化)
+        // FIRE
         { id: "f1", name: "焔の尖兵", attr: "FIRE", dur: 2, exp: 1, type: "PASSIVE", ability: "攻撃時、自身の攻撃+1", destruction: "敵ランダムに1ダメ" },
         { id: "f2", name: "火走りの策士", attr: "FIRE", dur: 3, exp: 1, type: "PASSIVE", ability: "囲み条件緩和(1方向)", destruction: "自分HP-1" },
         { id: "f3", name: "紅蓮の剣士", attr: "FIRE", dur: 5, exp: 2, type: "PASSIVE", ability: "有利属性に+1ダメ", destruction: "敵プレイヤーに1ダメ" },
         { id: "f4", name: "焦熱の号令", attr: "FIRE", dur: 4, exp: 2, type: "PASSIVE", ability: "隣接炎の攻撃+1", destruction: "自分の炎1体に1ダメ" },
         { id: "f5", name: "煉獄の巨兵", attr: "FIRE", dur: 8, exp: 4, type: "PASSIVE", ability: "攻撃対象の隣接敵にも1ダメ", destruction: "自分HP-3" },
         { id: "f6", name: "終炎の王", attr: "FIRE", dur: 9, exp: 5, type: "PASSIVE", ability: "攻撃時+2", destruction: "自分盤面1体破壊" },
-        // WATER (防御・回復)
+        // WATER
         { id: "w1", name: "潤水の癒し手", attr: "WATER", dur: 2, exp: 2, type: "PASSIVE", ability: "ターン終了時自分HP+1", destruction: "なし" },
         { id: "w2", name: "流転の盾", attr: "WATER", dur: 3, exp: 1, type: "PASSIVE", ability: "隣接味方の耐久+1", destruction: "隣接味方-1耐久" },
         { id: "w3", name: "深流の守護者", attr: "WATER", dur: 6, exp: 2, type: "PASSIVE", ability: "被ダメ-1", destruction: "自分HP-1" },
         { id: "w4", name: "蒼波の転換者", attr: "WATER", dur: 5, exp: 2, type: "PASSIVE", ability: "攻撃時、自分HP+1", destruction: "相手HP+1" },
         { id: "w5", name: "海嘯の大精霊", attr: "WATER", dur: 8, exp: 3, type: "PASSIVE", ability: "攻撃した敵の攻撃-1", destruction: "自分HP-2" },
         { id: "w6", name: "静寂の守護神", attr: "WATER", dur: 9, exp: 4, type: "PASSIVE", ability: "サドンデス攻撃不可/爆ダメ-1", destruction: "自分HP-2" },
-        // THUNDER (速度・連続)
+        // THUNDER
         { id: "t1", name: "閃光の刺客", attr: "THUNDER", dur: 2, exp: 1, type: "ACTIVE", ability: "【発動】疲労中も可/味方(耐久4以下)の疲労回復", destruction: "なし" },
         { id: "t2", name: "電圧操作士", attr: "THUNDER", dur: 3, exp: 1, type: "ACTIVE", ability: "【発動】敵1体を疲労させる", destruction: "自身も疲労" },
         { id: "t3", name: "雷撃の槍兵", attr: "THUNDER", dur: 4, exp: 2, type: "PASSIVE", ability: "有利属性に+2ダメ", destruction: "自分HP-1" },
         { id: "t4", name: "轟雷の司令", attr: "THUNDER", dur: 5, exp: 2, type: "ACTIVE", ability: "【発動】今ターン疲労なし", destruction: "次ターン行動不可" },
         { id: "t5", name: "雷神の化身", attr: "THUNDER", dur: 8, exp: 4, type: "PASSIVE", ability: "攻撃後もう1回攻撃可", destruction: "自分HP-3" },
         { id: "t6", name: "終末の雷鳴", attr: "THUNDER", dur: 9, exp: 5, type: "PASSIVE", ability: "攻撃対象の周囲全体1ダメ", destruction: "味方全体-1耐久" },
-        // WIND (移動・撹乱)
+        // WIND
         { id: "n1", name: "疾風の伝令", attr: "WIND", dur: 2, exp: 1, type: "ACTIVE", ability: "【発動】隣接マスへ移動", destruction: "なし" },
         { id: "n2", name: "風読みの策士", attr: "WIND", dur: 3, exp: 1, type: "PASSIVE", ability: "斜め干渉可能", destruction: "自分HP-1" },
         { id: "n3", name: "旋風の剣士", attr: "WIND", dur: 4, exp: 2, type: "PASSIVE", ability: "移動後攻撃可能", destruction: "なし" },
         { id: "n4", name: "風圧の結界師", attr: "WIND", dur: 5, exp: 2, type: "PASSIVE", ability: "隣接敵の攻撃-1", destruction: "敵全体攻撃+1" },
         { id: "n5", name: "天翔ける竜", attr: "WIND", dur: 8, exp: 4, type: "PASSIVE", ability: "全盤面射程", destruction: "自分HP-2" },
         { id: "n6", name: "乱気流の支配者", attr: "WIND", dur: 9, exp: 4, type: "PASSIVE", ability: "敵配置時に1ダメ", destruction: "ランダム移動" },
-        // EARTH (陣形・堅牢)
+        // EARTH
         { id: "e1", name: "岩盾の兵", attr: "EARTH", dur: 3, exp: 1, type: "PASSIVE", ability: "囲み時さらに+1ダメ", destruction: "なし" },
         { id: "e2", name: "根張りの精霊", attr: "EARTH", dur: 2, exp: 1, type: "PASSIVE", ability: "移動不可/被ダメ-1", destruction: "自分HP-1" },
         { id: "e3", name: "大地の戦士", attr: "EARTH", dur: 6, exp: 2, type: "PASSIVE", ability: "隣接味方耐久+1", destruction: "隣接味方-1耐久" },
         { id: "e4", name: "岩盤の陣形師", attr: "EARTH", dur: 5, exp: 2, type: "PASSIVE", ability: "囲み条件緩和", destruction: "次ターン囲み無効" },
         { id: "e5", name: "山岳巨人", attr: "EARTH", dur: 9, exp: 4, type: "PASSIVE", ability: "被ダメ-1", destruction: "自分HP-3" },
         { id: "e6", name: "大地神の化身", attr: "EARTH", dur: 8, exp: 4, type: "PASSIVE", ability: "隣接味方は爆ダメ-1", destruction: "自分盤面1体破壊" },
-        // ABYSS (特殊・呪い)
+        // ABYSS
         { id: "a1", name: "闇縛りの影", attr: "ABYSS", dur: 2, exp: 1, type: "PASSIVE", ability: "攻撃対象の能力封印", destruction: "なし" },
         { id: "a2", name: "深淵の囁き", attr: "ABYSS", dur: 3, exp: 1, type: "ACTIVE", ability: "【発動】敵の爆ダメ+1", destruction: "自分HP-1" },
         { id: "a3", name: "呪刻の司祭", attr: "ABYSS", dur: 4, exp: 2, type: "PASSIVE", ability: "敵爆発時に追加1ダメ", destruction: "相手HP+1" },
@@ -392,10 +391,12 @@
             this.hp = { p1: 25, p2: 25 };
             this.hand = { p1: [], p2: [] };
             
-            // デッキの初期化
+            // 重要：デッキの同期ロジック
             if (syncedDecks) {
+                // P2側: ホストから送られてきた「確定済みのデッキ」を使用する
                 this.deck = syncedDecks;
             } else {
+                // P1側: 自分でデッキを作成し、シャッフルする
                 this.deck = { 
                     p1: this.createDeck(), 
                     p2: this.createDeck() 
@@ -415,10 +416,12 @@
             this.waitingForSkillTarget = null;
 
             this.initBoardUI();
+            
+            // 初手ドロー
             this.drawCard('p1', 5);
             this.drawCard('p2', 5);
 
-            // ボタンイベント
+            // ボタン
             document.getElementById('end-phase-btn').onclick = () => this.sendAction({ type: 'NEXT_TURN' });
             document.getElementById('skill-btn').onclick = () => this.toggleSkillMode();
 
@@ -427,6 +430,7 @@
         }
 
         createDeck() {
+            // ここでシャッフルが行われる
             return FULL_CARD_POOL.map(c => ({ ...c })).sort(() => Math.random() - 0.5);
         }
 
@@ -434,6 +438,7 @@
             for (let i = 0; i < count; i++) {
                 if (this.deck[player].length > 0 && this.hand[player].length < 10) {
                     const card = this.deck[player].pop();
+                    // 属性などの基本データ以外の状態変数をリセット
                     card.attackBonus = 0;
                     card.silenced = false;
                     card.extraExplosion = 0;
@@ -485,14 +490,12 @@
 
             const cardAtCell = this.board[idx];
 
-            // 詳細表示
             if (cardAtCell) {
                 this.showDetail(cardAtCell);
             } else {
                 document.getElementById('detail-panel').style.display = 'none';
             }
 
-            // スキル対象選択待機中
             if (this.waitingForSkillTarget) {
                 this.sendAction({
                     type: 'SKILL_ACTIVATE',
@@ -504,7 +507,6 @@
                 return;
             }
 
-            // スキル発動モード
             if (this.isSkillMode) {
                 if (cardAtCell && cardAtCell.owner === this.currentPlayer) {
                     this.prepareActiveSkill(idx);
@@ -512,7 +514,6 @@
                 return;
             }
 
-            // 手札からの配置
             if (this.selectedHandIdx !== null && !cardAtCell) {
                 if (this.currentDeployCount >= this.deployLimit) {
                     this.log("配置制限です（1ターン2枚まで）");
@@ -526,7 +527,6 @@
                 return;
             }
 
-            // 盤面のカード操作（移動・攻撃）
             if (cardAtCell && cardAtCell.owner === this.currentPlayer) {
                 if (cardAtCell.isFatigued && cardAtCell.id !== "t1") {
                     this.log("このカードは疲労しています");
@@ -621,7 +621,6 @@
             const defender = this.board[to];
             let dmg = 1 + attacker.attackBonus;
 
-            // 属性相性
             const atkAttr = ATTRS.indexOf(attacker.attr);
             const defAttr = ATTRS.indexOf(defender.attr);
             if ((atkAttr + 1) % 6 === defAttr) {
@@ -630,7 +629,6 @@
                 else dmg += 1;
             }
 
-            // 囲み
             if (!this.chainDisabled[this.currentPlayer]) {
                 let req = (attacker.id === "f2" || attacker.id === "e4") ? 1 : 2;
                 if (this.countAdjacents(to, attacker.owner) >= req) {
