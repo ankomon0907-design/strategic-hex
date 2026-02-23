@@ -5,7 +5,10 @@
     <title>Strategic Hex Explosion - Perfect Stable Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        /* ホーム画面用の独立したスタイル */
+        /* ========================================
+           UI スタイル設定（全デザインを完全保持）
+           ========================================
+        */
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; background: #1a1a1a;
@@ -55,7 +58,6 @@
             font-size: 11px; display: none; border: 1px solid #666;
         }
 
-        /* 以下、元のゲームのCSS（すべて保持） */
         :root {
             --p1-color: #ff4d4d;
             --p2-color: #4d79ff;
@@ -203,12 +205,14 @@
     </div>
 
 <script>
-    /**
-     * オンライン通信管理ロジック
-     */
+    /*
+      ========================================
+      オンライン通信管理 (PeerJS)
+      ========================================
+    */
     let peer = null;
     let conn = null;
-    let myPlayerRole = 'p1';
+    let myPlayerRole = 'p1'; 
     let isOnlineMode = false;
 
     function createRoom() {
@@ -250,17 +254,27 @@
         });
     }
 
+    /*
+      ========================================
+      ゲーム初期化
+      ========================================
+    */
     function initApp() {
         document.getElementById('home-layer').classList.add('hidden');
         document.getElementById('return-home-overlay').style.display = 'block';
         document.getElementById('game-container').style.visibility = 'visible';
+        
+        // すでにインスタンスがある場合は作らない
         if(!window.gameInstance) {
             window.gameInstance = new StrategicGame();
         }
     }
 
-    // --- ここから StrategicGame の全ロジック（801行ベースのフルデータ） ---
-    
+    /*
+      ========================================
+      ゲームロジック・コア (StrategicGame クラス)
+      ========================================
+    */
     const ATTRS = ['FIRE', 'WIND', 'EARTH', 'THUNDER', 'WATER', 'ABYSS'];
     
     // 全36種類のカードデータ
@@ -327,11 +341,11 @@
             this.chainDisabled = { p1: false, p2: false };
             this.waitingForSkillTarget = null;
 
-            this.initBoard();
+            this.initBoardUI();
             this.drawCard('p1', 5);
             this.drawCard('p2', 5);
 
-            // GitHubで動くための修正：ここですべてのリスナーを張る
+            // ボタンのリスナー設定（ここでGitHub対策の直接割当を行う）
             const endBtn = document.getElementById('end-phase-btn');
             const skillBtn = document.getElementById('skill-btn');
             if(endBtn) endBtn.onclick = () => this.sendAction({ type: 'NEXT_TURN' });
@@ -358,7 +372,7 @@
             }
         }
 
-        initBoard() {
+        initBoardUI() {
             const boardEl = document.getElementById('board');
             boardEl.innerHTML = '';
             for (let i = 0; i < 16; i++) {
@@ -386,9 +400,9 @@
                 this.executeAttack(data.from, data.to);
             } else if (data.type === 'NEXT_TURN') {
                 this.nextTurn();
-            } else if (data.type === 'SKILL') {
+            } else if (data.type === 'SKILL_ACTIVATE') {
                 this.executeSkillOnTarget(data.targetIdx, data.skillInfo);
-            } else if (data.type === 'THUNDER_COMMAND') {
+            } else if (data.type === 'T4_CMD') {
                 this.board[data.idx].usedThunderCommand = true;
                 this.log(`${this.board[data.idx].name}が轟雷の指令を受けました`);
                 this.updateUI();
@@ -402,7 +416,7 @@
 
             if (this.waitingForSkillTarget) {
                 this.sendAction({
-                    type: 'SKILL',
+                    type: 'SKILL_ACTIVATE',
                     targetIdx: idx,
                     skillInfo: this.waitingForSkillTarget
                 });
@@ -418,6 +432,7 @@
                 return;
             }
 
+            // 手札選択中かつ空きマスをクリックで配置
             if (this.selectedHandIdx !== null && !cardAtCell) {
                 if (this.currentDeployCount >= this.deployLimit) {
                     this.log("配置制限です（1ターン2枚まで）");
@@ -431,6 +446,7 @@
                 return;
             }
 
+            // 盤面の自分のカードを選択
             if (cardAtCell && cardAtCell.owner === this.currentPlayer) {
                 if (cardAtCell.isFatigued && cardAtCell.id !== "t1") {
                     this.log("このカードは疲労しています");
@@ -442,12 +458,16 @@
                     this.selectedBoardIdx = idx;
                     this.selectedHandIdx = null;
                 }
-            } else if (this.selectedBoardIdx !== null && !cardAtCell) {
+            } 
+            // 移動
+            else if (this.selectedBoardIdx !== null && !cardAtCell) {
                 if (this.canMoveTo(this.selectedBoardIdx, idx)) {
                     this.sendAction({ type: 'MOVE', from: this.selectedBoardIdx, to: idx });
                     this.selectedBoardIdx = null;
                 }
-            } else if (this.selectedBoardIdx !== null && cardAtCell && cardAtCell.owner !== this.currentPlayer) {
+            } 
+            // 攻撃
+            else if (this.selectedBoardIdx !== null && cardAtCell && cardAtCell.owner !== this.currentPlayer) {
                 if (this.canAttack(this.selectedBoardIdx, idx)) {
                     this.sendAction({ type: 'ATTACK', from: this.selectedBoardIdx, to: idx });
                     this.selectedBoardIdx = null;
@@ -462,20 +482,20 @@
             if (card.type !== "ACTIVE") return;
 
             if (card.id === "t1") {
-                this.waitingForSkillTarget = { type: 'RECOVER_FATIGUE', ownerIdx: idx };
-                this.log("疲労回復する味方(耐久4以下)を選択...");
+                this.waitingForSkillTarget = { type: 'RECOVER_F', ownerIdx: idx };
+                this.log("対象の味方を選択してください...");
             } else if (card.id === "t2") {
-                this.waitingForSkillTarget = { type: 'ENEMY_FATIGUE', ownerIdx: idx };
-                this.log("疲労させる敵を選択...");
+                this.waitingForSkillTarget = { type: 'ENEMY_F', ownerIdx: idx };
+                this.log("対象の敵を選択してください...");
             } else if (card.id === "t4") {
-                this.sendAction({ type: 'THUNDER_COMMAND', idx: idx });
+                this.sendAction({ type: 'T4_CMD', idx: idx });
             } else if (card.id === "n1") {
                 this.selectedBoardIdx = idx;
                 this.isSkillMode = false;
-                this.log("ワープ先のマスを選択...");
+                this.log("移動先のマスを選択してください...");
             } else if (card.id === "a2") {
-                this.waitingForSkillTarget = { type: 'WHISPER', ownerIdx: idx };
-                this.log("呪いをかける敵を選択...");
+                this.waitingForSkillTarget = { type: 'CURSE', ownerIdx: idx };
+                this.log("呪う敵を選択してください...");
             }
             this.updateUI();
         }
@@ -511,15 +531,17 @@
             const defender = this.board[to];
             let dmg = 1 + attacker.attackBonus;
 
+            // 属性相性
             const atkAttr = ATTRS.indexOf(attacker.attr);
             const defAttr = ATTRS.indexOf(defender.attr);
             if ((atkAttr + 1) % 6 === defAttr) {
                 if (attacker.id === "f3") dmg += 2;
                 else if (attacker.id === "t3") dmg += 3;
                 else dmg += 1;
-                this.log("属性有利！ダメージ増加");
+                this.log("属性有利！ダメージボーナス");
             }
 
+            // 囲み
             if (!this.chainDisabled[this.currentPlayer]) {
                 let req = (attacker.id === "f2" || attacker.id === "e4") ? 1 : 2;
                 if (this.countAdjacents(to, attacker.owner) >= req) {
@@ -531,7 +553,7 @@
             if (this.isSuddenDeath) dmg += 2;
             if (["w3", "e2", "e5"].includes(defender.id)) dmg = Math.max(1, dmg - 1);
 
-            this.log(`${attacker.name}の攻撃、${dmg}ダメージ`);
+            this.log(`${attacker.name}の攻撃、${dmg}ダメージを与えた`);
             this.applyDamage(to, dmg);
 
             attacker.hasAttackedThisTurn = true;
@@ -548,7 +570,7 @@
             if (!card) return;
             card.currentDur -= amount;
             if (card.currentDur <= 0) {
-                this.log(`${card.name}が限界を迎えました`);
+                this.log(`${card.name}が撃破されました`);
                 this.explode(idx);
             }
         }
@@ -560,7 +582,7 @@
             if (this.isSuddenDeath) expDmg += 1;
 
             this.hp[card.owner] -= expDmg;
-            this.log(`${card.owner}が爆発に巻き込まれ ${expDmg} ダメージ`);
+            this.log(`${card.owner}が爆発！ ${expDmg} ダメージを受けた`);
 
             const enemy = (card.owner === 'p1' ? 'p2' : 'p1');
             this.triggerDestruction(card, enemy);
@@ -580,14 +602,17 @@
             const target = this.board[targetIdx];
             const owner = this.board[skillInfo.ownerIdx];
 
-            if (skillInfo.type === 'RECOVER_FATIGUE' && target && target.dur <= 4) {
+            if (skillInfo.type === 'RECOVER_F' && target && target.dur <= 4) {
                 target.isFatigued = false;
                 target.fatigueTimer = 0;
-            } else if (skillInfo.type === 'ENEMY_FATIGUE' && target) {
+                this.log(`${target.name}の疲労が回復した`);
+            } else if (skillInfo.type === 'ENEMY_F' && target) {
                 target.isFatigued = true;
                 target.fatigueTimer = 2;
-            } else if (skillInfo.type === 'WHISPER' && target) {
+                this.log(`${target.name}を疲労させた`);
+            } else if (skillInfo.type === 'CURSE' && target) {
                 target.extraExplosion += 1;
+                this.log(`${target.name}に爆発の呪いをかけた`);
             }
 
             owner.isFatigued = true;
@@ -607,7 +632,7 @@
             this.waitingForSkillTarget = null;
 
             if (this.skipNextTurn[this.currentPlayer]) {
-                this.log(`${this.currentPlayer}は反動で動けません`);
+                this.log(`${this.currentPlayer}は反動で行動不能です`);
                 this.skipNextTurn[this.currentPlayer] = false;
                 return this.nextTurn();
             }
@@ -707,7 +732,9 @@
             document.getElementById('p2-hp').innerText = this.hp.p2;
             document.getElementById('turn-label').innerText = `TURN ${this.turn} - ${this.currentPlayer.toUpperCase()}`;
             document.getElementById('deploy-count').innerText = (this.deployLimit - this.currentDeployCount);
-            document.getElementById('skill-btn').className = this.isSkillMode ? 'active-mode' : '';
+            
+            const skillBtn = document.getElementById('skill-btn');
+            if(skillBtn) skillBtn.className = this.isSkillMode ? 'active-mode' : '';
 
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, i) => {
